@@ -1,0 +1,1451 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Nghe Nói">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#eef2f1">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Nghe Nói</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&display=swap">
+<style>
+/* Layout: one-column listening deck. Big current card on top, transport controls, options, then the full list to tap through. */
+:root {
+  --bg: #eef2f1;
+  --surface: #ffffff;
+  --surface-2: #e2e9e7;
+  --fg: #12201f;
+  --muted: #5a6d6b;
+  --line: #cdd8d6;
+  --accent: #0b7a64;
+  --accent-fg: #ffffff;
+  --mark: #c4560f;
+  --font-vi: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --font-jp: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", "Be Vietnam Pro", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1a19; --surface: #152827; --surface-2: #1d3433; --fg: #e6f0ee; --muted: #93aaa7;
+    --line: #2a4543; --accent: #3fc4a5; --accent-fg: #06201a; --mark: #f08a45; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1a19; --surface: #152827; --surface-2: #1d3433; --fg: #e6f0ee; --muted: #93aaa7;
+  --line: #2a4543; --accent: #3fc4a5; --accent-fg: #06201a; --mark: #f08a45; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-vi); font-size: 15px; line-height: 1.5;
+  padding-block: 16px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+main { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+h1 { font-size: 20px; margin: 0; font-weight: 700; letter-spacing: .01em; }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.top small { color: var(--muted); }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 10px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; padding: 7px 14px; border-radius: 8px; min-height: 36px; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); font-weight: 700; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 22px 18px;
+  display: flex; flex-direction: column; gap: 14px; min-height: 230px; justify-content: center; text-align: left; width: 100%;
+}
+.card .count { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; display: flex; justify-content: space-between; align-items: center; }
+.vi { font-size: 28px; line-height: 1.3; font-weight: 700; text-wrap: balance; overflow-wrap: anywhere; }
+.vi.hidden { color: transparent; background: var(--surface-2); border-radius: 8px; user-select: none; min-height: 40px; }
+.jp { font-family: var(--font-jp); font-size: 19px; color: var(--accent); min-height: 28px; }
+.jp.hidden { visibility: hidden; }
+.ety { border: 0; background: transparent; text-align: left; padding: 0; color: var(--muted); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.etyd { border: 0; background: var(--surface-2); text-align: left; padding: 10px 12px; border-radius: 10px; color: var(--fg); font-family: var(--font-jp); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+#bk summary { cursor: pointer; font-weight: 700; }
+#bkTxt { width: 100%; font-size: 16px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); font-family: ui-monospace, monospace; resize: vertical; }
+.star { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 5px 12px; min-height: 34px; color: var(--muted); font-size: 13px; }
+.star[aria-pressed="true"] { color: var(--mark); border-color: var(--mark); font-weight: 700; }
+
+.transport { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 10px; }
+.transport button { min-height: 52px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-weight: 500; }
+.transport .go { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 700; font-size: 17px; }
+.once { width: 100%; min-height: 44px; border-radius: 12px; border: 1px dashed var(--line); background: transparent; color: var(--muted); }
+
+.opts { display: grid; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.opt { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.opt label { color: var(--muted); font-size: 14px; }
+.opt .seg button { padding: 6px 11px; min-height: 34px; }
+.warn { font-size: 13px; color: var(--mark); margin: 0; }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+
+h2 { font-size: 14px; margin: 0; color: var(--muted); font-weight: 500; letter-spacing: .04em; }
+.list { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); }
+.row { display: grid; grid-template-columns: 28px 1fr; gap: 8px; padding: 11px 14px; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left; width: 100%; min-width: 0; }
+.row:last-child { border-bottom: 0; }
+.row .n { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; padding-top: 3px; }
+.row .v { font-weight: 500; overflow-wrap: anywhere; }
+.row .j { font-family: var(--font-jp); color: var(--muted); font-size: 13px; }
+.row[aria-current="true"] { background: var(--surface-2); }
+.row.marked .v::after { content: " ★"; color: var(--mark); }
+select { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; min-height: 40px; align-self: flex-start; }
+.plan { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 12px; }
+.plan-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.plan-head strong { font-size: 15px; }
+.plan-head span { color: var(--muted); font-size: 13px; }
+.meter .lbl { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 5px; flex-wrap: wrap; }
+.meter .lbl b { color: var(--fg); font-weight: 700; font-variant-numeric: tabular-nums; }
+.bar { position: relative; height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 999px; min-width: 4px; }
+.bar u { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--mark); text-decoration: none; }
+.view { display: flex; flex-direction: column; gap: 16px; }
+.rv-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.rv-head strong { font-size: 16px; }
+.rv-head span { color: var(--muted); font-size: 13px; }
+.rv-show { width: 100%; min-height: 56px; border-radius: 12px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg); font-weight: 700; font-size: 17px; }
+.rv-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rv-grade button { min-height: 56px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-weight: 700; font-size: 17px; }
+.rv-grade .yes { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.rv-grade .no { color: var(--mark); border-color: var(--mark); }
+.rv-done { font-size: 15px; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+.choices { display: grid; gap: 10px; }
+.choice { text-align: left; min-height: 54px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 17px; font-weight: 500; overflow-wrap: anywhere; }
+.choice.jpc { font-family: var(--font-jp); }
+.choice:disabled { cursor: default; color: var(--fg); }
+.choice.ok { border: 2px solid var(--accent); background: var(--surface-2); font-weight: 700; }
+.choice.ok::before { content: "✓ "; color: var(--accent); }
+.choice.ng, .choice.ng:disabled { border: 2px solid var(--mark); color: var(--mark); }
+.choice.ng::before { content: "✗ "; }
+.vi.jpq { font-family: var(--font-jp); font-size: 24px; }
+.t-feed { white-space: pre-line; }
+.hrow { display: flex; justify-content: space-between; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.hrow:last-child { border-bottom: 0; }
+.hrow span:last-child { font-weight: 700; }
+@media (prefers-reduced-motion: no-preference) { .card { transition: border-color .2s; } .card.playing { border-color: var(--accent); } }
+</style>
+<style>body { padding-top: max(16px, env(safe-area-inset-top, 0px)); padding-bottom: max(24px, env(safe-area-inset-bottom, 0px)); }</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <h1>Nghe Nói</h1>
+    <small>南部発音・仕事ベトナム語</small>
+  </div>
+
+  <section class="plan" aria-label="3ヶ月プラン">
+    <div class="plan-head"><strong id="planDay"></strong><span id="planPhase"></span></div>
+    <div class="meter"><div class="lbl"><span>単語</span><span id="wTxt"></span></div><div class="bar"><i id="wBar"></i><u id="wTick"></u></div></div>
+    <div class="meter"><div class="lbl"><span>文</span><span id="sTxt"></span></div><div class="bar"><i id="sBar"></i><u id="sTick"></u></div></div>
+    <p class="hint">1日の目標は単語25+文10。赤い線が「今日までの目標」。</p>
+  </section>
+
+  <div class="seg" role="group" aria-label="モード" id="viewSeg" style="align-self:flex-start">
+    <button id="viewLearn" aria-pressed="true">学習</button>
+    <button id="viewReview" aria-pressed="false">復習</button>
+    <button id="viewTest" aria-pressed="false">テスト</button>
+    <button id="viewRead" aria-pressed="false">読解</button>
+  </div>
+
+  <div class="view" id="learnView">
+  <div class="seg" role="group" aria-label="種類" id="modeSeg" style="align-self:flex-start">
+    <button id="m-sentences" aria-pressed="true">文</button>
+    <button id="m-words" aria-pressed="false">単語</button>
+  </div>
+  <select id="daySel" aria-label="どの日の分か"></select>
+
+  <div class="card" id="card" aria-live="polite">
+    <div class="count"><span id="pos"></span><button class="star" id="star" aria-pressed="false">★ 苦手</button></div>
+    <div class="vi" id="vi"></div>
+    <div class="jp" id="jp"></div>
+    <button class="ety" id="ety" hidden></button>
+    <button class="etyd" id="etyD" hidden></button>
+  </div>
+
+  <div class="transport">
+    <button id="prev">前へ</button>
+    <button id="play" class="go">自動再生</button>
+    <button id="next">次へ</button>
+  </div>
+  <button class="once" id="once">この1つをもう一回聞く</button>
+
+  <div class="opts">
+    <div class="opt"><label>スピード</label>
+      <div class="seg" id="rateSeg"><button data-v="0.65">ゆっくり</button><button data-v="0.85" aria-pressed="true">普通</button><button data-v="1">速め</button></div></div>
+    <div class="opt"><label>間(ま)</label>
+      <div class="seg" id="gapSeg"><button data-v="1000">短</button><button data-v="2500" aria-pressed="true">中</button><button data-v="4500">長</button></div></div>
+    <div class="opt"><label>音楽を安定(実験)</label>
+      <div class="seg" id="holdSeg"><button data-v="1">ON</button><button data-v="0" aria-pressed="true">OFF</button></div></div>
+    <div class="opt"><label>2回読む</label>
+      <div class="seg" id="repSeg"><button data-v="1" aria-pressed="true">する</button><button data-v="0">しない</button></div></div>
+    <div class="opt"><label>文字を隠して聞く</label>
+      <div class="seg" id="hideSeg"><button data-v="1">隠す</button><button data-v="0" aria-pressed="true">出す</button></div></div>
+    <div class="opt"><label>苦手だけ流す</label>
+      <div class="seg" id="favSeg"><button data-v="1">ON</button><button data-v="0" aria-pressed="true">OFF</button></div></div>
+    <p class="warn" id="warn" hidden>この端末にベトナム語の音声が見つかりません。端末の設定で vi-VN の音声を追加してください。</p>
+    <p class="hint">音声は端末の読み上げ機能なので、北部寄りの発音になることがあります。南部の音は GPT Voice や VTV9 で確認してな。</p>
+  </div>
+
+  <h2 id="listTitle">一覧</h2>
+  <div class="list" id="list"></div>
+
+  <details class="opts" id="bk">
+    <summary>記録の書き出し・読み込み</summary>
+    <p class="hint">★苦手、復習の日程、テストと読解の成績を、別のアプリや端末に移すときに使う。単語と文の中身は移さなくても入ってる。</p>
+    <button class="once" id="bkOut" style="border-style:solid">書き出す(コピー)</button>
+    <textarea id="bkTxt" rows="4" placeholder="書き出したコードがここに出る。読み込むときは、ここに貼り付けて「読み込む」"></textarea>
+    <button class="once" id="bkIn" style="border-style:solid">読み込む</button>
+    <p class="hint" id="bkMsg" aria-live="polite"></p>
+  </details>
+  </div>
+
+  <section class="view" id="reviewView" hidden aria-label="今日の復習">
+    <div class="rv-head"><strong id="rvTitle"></strong><span id="rvSub"></span></div>
+    <div class="seg" id="rvMode"><button data-v="due" aria-pressed="true">今日の復習</button><button data-v="all" aria-pressed="false">全部通し</button></div>
+    <div class="seg" id="rvDir" style="align-self:flex-start"><button data-v="vi2jp" aria-pressed="true">聞いて意味を思い出す</button><button data-v="jp2vi" aria-pressed="false">日本語→ベトナム語</button></div>
+    <div class="view" id="rvAllSetup" hidden>
+      <div class="opts">
+        <div class="opt"><label for="rvRange">範囲</label><select id="rvRange"></select></div>
+        <div class="opt"><label>種類</label>
+          <div class="seg" id="rvKind"><button data-v="words">単語</button><button data-v="sentences">文</button><button data-v="both" aria-pressed="true">両方</button></div></div>
+        <div class="opt"><label>順番</label>
+          <div class="seg" id="rvOrder"><button data-v="shuffle" aria-pressed="true">ランダム</button><button data-v="new">新しい順</button><button data-v="old">古い順</button></div></div>
+        <p class="hint" id="rvAllInfo"></p>
+      </div>
+      <button class="rv-show" id="rvAllStart">全部通しで始める</button>
+      <p class="hint">期限に関係なく、選んだ範囲を最初から最後まで通して復習する。聞く → 思い出す → 答えを見る。「まだ」を押したものだけ ★苦手 に入って、明日の復習にも出る。「覚えた」は日程を変えない。</p>
+    </div>
+    <div class="card" id="rvCard" aria-live="polite">
+      <div class="count"><span id="rvPos"></span><span id="rvTag"></span></div>
+      <div class="vi hidden" id="rvVi"></div>
+      <div class="jp hidden" id="rvJp"></div>
+      <button class="ety" id="rvEty" hidden></button>
+      <button class="etyd" id="rvEtyD" hidden></button>
+    </div>
+    <button class="once" id="rvAgain">もう一回聞く</button>
+    <button class="rv-show" id="rvShow">答えを見る</button>
+    <div class="rv-grade" id="rvGrade" hidden>
+      <button class="no" id="rvNo">まだ</button>
+      <button class="yes" id="rvYes">覚えた</button>
+    </div>
+    <p class="rv-done" id="rvDone" hidden></p>
+    <button class="rv-show" id="rvMore" hidden>残りを続ける</button>
+    <button class="once" id="rvBack" hidden>範囲を選び直す</button>
+    <p class="hint">耳で聞いて意味を思い出してから、答えを見る。「まだ」は明日また出る。「覚えた」は 1・3・7・14・30日後にまた出る。記録はこの端末のブラウザに残る。</p>
+  </section>
+
+  <section class="view" id="testView" hidden aria-label="テスト">
+    <div class="view" id="tSetup">
+      <div class="opts">
+        <div class="opt"><label for="tRange">範囲</label><select id="tRange"></select></div>
+        <div class="opt"><label>種類</label>
+          <div class="seg" id="tKind"><button data-v="words">単語</button><button data-v="sentences">文</button><button data-v="both" aria-pressed="true">両方</button></div></div>
+        <div class="opt"><label>問題</label>
+          <div class="seg" id="tType"><button data-v="mix" aria-pressed="true">ミックス</button><button data-v="listen">聞き取り</button><button data-v="jp2vi">日→越</button><button data-v="cloze">穴埋め</button></div></div>
+        <div class="opt"><label>問題数</label>
+          <div class="seg" id="tCount"><button data-v="10" aria-pressed="true">10</button><button data-v="20">20</button><button data-v="30">30</button></div></div>
+        <p class="hint">聞き取り: 音声を聞いて意味を選ぶ。日→越: 日本語からベトナム語を選ぶ。穴埋め: 文の空いた所を選ぶ(文だけ出る)。間違えたものは ★苦手 に入って、明日の復習にも出る。</p>
+      </div>
+      <p class="warn" id="tMsg" hidden></p>
+      <button class="rv-show" id="tStart">テスト開始</button>
+      <h2 id="tHistTitle">最近の成績</h2>
+      <div class="list" id="tHist"></div>
+    </div>
+
+    <div class="view" id="tQuiz" hidden>
+      <div class="rv-head"><strong id="tProg"></strong><span id="tScore"></span></div>
+      <div class="bar"><i id="tBar"></i></div>
+      <div class="card" id="tCard" aria-live="polite">
+        <div class="count"><span id="tTypeLbl"></span><button class="star" id="tListen">もう一回聞く</button></div>
+        <div class="vi" id="tQ"></div>
+        <div class="jp" id="tSub"></div>
+      </div>
+      <div class="choices" id="tChoices"></div>
+      <p class="rv-done t-feed" id="tFeed" hidden></p>
+      <button class="rv-show" id="tNext" hidden>次へ</button>
+    </div>
+
+    <div class="view" id="tResult" hidden>
+      <p class="rv-done t-feed" id="tSum"></p>
+      <h2 id="tMissTitle">間違えたもの(タップで音声)</h2>
+      <div class="list" id="tMiss"></div>
+      <button class="rv-show" id="tRetry">間違えたものだけもう一回</button>
+      <button class="once" id="tBack">設定に戻る</button>
+    </div>
+  </section>
+
+  <section class="view" id="readView" hidden aria-label="読解">
+    <div class="view" id="rdList">
+      <p class="hint">短いメールや議事録を読んで、問題に答える。1行タップでその行の音声、「訳を見る」で日本語。まずは訳を見ずに読んでみる。</p>
+      <div class="list" id="rdItems"></div>
+    </div>
+    <div class="view" id="rdPage" hidden>
+      <div class="rv-head"><strong id="rdTitle"></strong><span id="rdMeta"></span></div>
+      <div class="opts" style="grid-template-columns:1fr 1fr">
+        <button class="once" id="rdAll" style="border-style:solid">全文を聞く</button>
+        <button class="once" id="rdJpBtn" style="border-style:solid" aria-pressed="false">訳を見る</button>
+      </div>
+      <div class="list" id="rdLines"></div>
+      <h2>問題</h2>
+      <div class="view" id="rdQs"></div>
+      <p class="rv-done" id="rdScore" hidden></p>
+      <button class="once" id="rdBack">一覧に戻る</button>
+    </div>
+  </section>
+</main>
+
+<script>
+const DATA = {
+  sentences: [
+    ["Anh nói chậm lại giùm em được hông ạ?", "ゆっくり話してもらえますか?"],
+    ["Anh nói lại một lần nữa giùm em nghen.", "もう一回お願いしますね"],
+    ["Chị viết ra giùm em được hông ạ?", "書いてもらえますか?"],
+    ["Dạ, em hiểu rồi ạ.", "はい、分かりました"],
+    ["Dạ, em chưa hiểu rõ ạ.", "はい、まだよく分かっていません"],
+    ["Em xin phép xác nhận lại ạ.", "確認させてください"],
+    ["Ý anh là vậy, đúng hông ạ?", "そういう意味で合ってますか?"],
+    ["Em gửi báo giá cho anh hôm nay nghen.", "今日、見積をお送りしますね"],
+    ["Anh cho em xin mẫu sản phẩm được hông ạ?", "製品サンプルをいただけますか?"],
+    ["Thời gian thử nghiệm khoảng hai tuần ạ.", "試験期間は約2週間です"],
+    ["Chi phí này đã bao gồm phí chứng nhận ạ.", "この費用には認証費用が含まれています"],
+    ["Bên em cần anh gửi hồ sơ sản phẩm ạ.", "こちらに製品の書類を送っていただく必要があります"],
+    ["Khi nào anh cần báo cáo ạ?", "レポートはいつ必要ですか?"],
+    ["Anh vui lòng cho em biết lịch giao mẫu ạ.", "サンプル納品のスケジュールを教えてください"],
+    ["Em sẽ báo lại cho anh sớm nghen.", "早めにご報告しますね"],
+    ["Cảm ơn anh, em sẽ gửi email xác nhận ạ.", "ありがとうございます、確認メールを送ります"],
+    ["Phòng thí nghiệm của công ty em ở Hòa Lạc, Hà Nội ạ.", "弊社の試験所はハノイのホアラックにあります"],
+    ["Dạ, em chào anh. Em là Hwang, bên công ty DTNC ạ.", "はい、こんにちは。DTNCのHwangです", 1],
+    ["Rất vui được gặp anh ạ.", "お会いできて嬉しいです", 1],
+    ["Hôm nay em xin phép trình bày về dịch vụ chứng nhận CR ạ.", "本日はCR認証サービスについてご説明します", 1],
+    ["Anh có câu hỏi nào hông ạ?", "ご質問はありますか?", 1],
+    ["Em xin lỗi, em nghe chưa rõ ạ.", "すみません、よく聞き取れませんでした", 1],
+    ["Anh có thể nói đơn giản hơn được hông ạ?", "もう少し簡単に言ってもらえますか?", 1],
+    ["Em sẽ kiểm tra rồi báo lại anh ngay nghen.", "確認してすぐご報告しますね", 1],
+    ["Hạn chót của dự án này là khi nào ạ?", "このプロジェクトの締め切りはいつですか?", 1],
+    ["Bên em có thể giao trước ngày hai mươi lăm được ạ.", "25日までに納品できます", 1],
+    ["Nếu bị trễ, em sẽ thông báo cho anh sớm ạ.", "遅れる場合は早めに連絡します", 1],
+    ["Giá này chưa bao gồm thuế VAT ạ.", "この価格は消費税(VAT)別です", 1],
+    ["Anh muốn thử nghiệm những hạng mục nào ạ?", "どの試験項目をご希望ですか?", 1],
+    ["Sản phẩm của anh đã đạt yêu cầu ạ.", "お客様の製品は基準に適合しました", 1],
+    ["Kết quả thử nghiệm sẽ có trong khoảng một tuần ạ.", "試験結果は1週間ほどで出ます", 1],
+    ["Anh vui lòng gửi cho em mã sản phẩm và thông số kỹ thuật ạ.", "製品コードと技術仕様を送ってください", 1],
+    ["Sản phẩm này nhập khẩu từ Nhật Bản đúng hông ạ?", "この製品は日本から輸入されたものですよね?", 1],
+    ["Anh cần công bố hợp quy trước khi bán ra thị trường ạ.", "市場に出す前に適合宣言が必要です", 1],
+    ["Em sẽ gửi biên bản cuộc họp cho anh sau nghen.", "議事録は後で送りますね", 1],
+    ["Cảm ơn anh đã dành thời gian cho em ạ.", "お時間をいただきありがとうございます", 1],
+    ["Hẹn gặp lại anh lần sau ạ.", "また次回お会いしましょう", 1],
+    ["Chúng ta họp lúc mấy giờ ạ?", "何時に会議しますか?", 2],
+    ["Em rảnh vào chiều mai ạ.", "明日の午後なら空いています", 2],
+    ["Tuần sau anh có rảnh hông ạ?", "来週お時間ありますか?", 2],
+    ["Cuộc họp bắt đầu lúc chín giờ sáng nghen.", "会議は午前9時に始まりますね", 2],
+    ["Em xin phép dời lịch sang tuần sau được hông ạ?", "来週に予定を変更してもいいですか?", 2],
+    ["Em đồng ý với đề xuất của anh ạ.", "ご提案に賛成です", 2],
+    ["Em chưa chắc, để em kiểm tra lại ạ.", "まだ確実ではないので、確認し直します", 2],
+    ["Việc này rất quan trọng với bên em ạ.", "これは弊社にとってとても重要です", 2],
+    ["Anh cho em hỏi một câu được hông ạ?", "一つ質問してもいいですか?", 2],
+    ["Em sẽ trả lời anh trước năm giờ chiều nay ạ.", "今日の17時前にお返事します", 2],
+    ["Cái này giá bao nhiêu vậy ạ?", "これはいくらですか?", 3],
+    ["Đơn giá là hai triệu đồng một bộ ạ.", "単価は1セット200万ドンです", 3],
+    ["Anh cần số lượng bao nhiêu ạ?", "数量はいくつ必要ですか?", 3],
+    ["Tổng cộng là mười lăm triệu đồng ạ.", "合計1,500万ドンです", 3],
+    ["Anh đặt từ năm bộ trở lên thì em giảm giá ạ.", "5セット以上ご注文なら値引きします", 3],
+    ["Giá có thể tăng nếu thêm hạng mục thử nghiệm ạ.", "試験項目が増えると価格が上がることがあります", 3],
+    ["Chi phí khoảng năm trăm ngàn đồng mỗi mẫu ạ.", "費用は1サンプルあたり約50万ドンです", 3],
+    ["Mỗi mẫu cần hai cái ạ.", "1サンプルにつき2個必要です", 3],
+    ["Em xin gửi báo giá bằng đô la được hông ạ?", "ドル建てで見積をお送りしてもいいですか?", 3],
+    ["Anh xác nhận lại số lượng giùm em nghen.", "数量をもう一度確認してくださいね", 3],
+    ["Em đã nhận được email của anh rồi ạ.", "メールを受け取りました", 4],
+    ["Em gửi file đính kèm cho anh nghen.", "添付ファイルをお送りしますね", 4],
+    ["Anh vui lòng phản hồi giùm em trước ngày mai ạ.", "明日までにご返信ください", 4],
+    ["Em gọi điện cho anh được hông ạ?", "お電話してもいいですか?", 4],
+    ["Anh cho em xin số điện thoại của anh ạ.", "お電話番号を教えてください", 4],
+    ["Anh chờ em một chút nghen.", "少々お待ちくださいね", 4],
+    ["Xin lỗi anh, em đang bận chút xíu ạ.", "すみません、今ちょっと忙しいです", 4],
+    ["Không sao đâu anh, em chờ được ạ.", "大丈夫です、待てます", 4],
+    ["Em đã cập nhật phiên bản mới và gửi lại cho anh ạ.", "新しいバージョンに更新して再送しました", 4],
+    ["Anh kiểm tra giùm em rồi liên hệ lại sau nghen.", "確認して、後でまた連絡してくださいね", 4],
+    ["Vì sản phẩm này mới nên em cần kiểm tra kỹ hơn ạ.", "この製品は新しいので、もっと詳しく確認する必要があります", 5],
+    ["Em hiểu ý anh, nhưng thời gian hơi gấp ạ.", "お考えは分かりますが、時間が少し急ぎです", 5],
+    ["Nếu anh đồng ý thì em sẽ gửi hợp đồng ngay ạ.", "ご同意いただけたら、すぐ契約書を送ります", 5],
+    ["Anh muốn nhận mẫu hôm nay hoặc ngày mai ạ?", "サンプルは今日か明日、どちらで受け取りたいですか?", 5],
+    ["Em đang chờ kết quả, chưa có thông tin mới ạ.", "結果待ちで、まだ新しい情報はありません", 5],
+    ["Bên em đã gửi báo giá rồi, anh kiểm tra giùm em nghen.", "見積はもう送りました、ご確認くださいね", 5],
+    ["Giá này rất tốt, nhưng em cần thêm thời gian ạ.", "価格はとても良いですが、もう少し時間が必要です", 5],
+    ["Tuy nhiên, anh vẫn cần công bố hợp quy ạ.", "ただし、適合宣言はやはり必要です", 5],
+    ["Anh cho em biết lý do được hông ạ?", "理由を教えてもらえますか?", 5],
+    ["Em cũng muốn nghe ý kiến của anh nữa ạ.", "私もぜひご意見をお聞きしたいです", 5],
+    ["Em đã nộp hồ sơ cho cơ quan quản lý rồi ạ.", "申請書類は規制当局にもう提出しました", 6],
+    ["Hồ sơ đang chờ phê duyệt ạ.", "書類は承認待ちです", 6],
+    ["Giấy chứng nhận có hiệu lực trong ba năm ạ.", "認証書は3年間有効です", 6],
+    ["Giấy chứng nhận sắp hết hạn, anh cần gia hạn ạ.", "認証書がもうすぐ期限切れなので、更新が必要です", 6],
+    ["Quy trình gồm ba bước ạ.", "手順は3ステップです", 6],
+    ["Hiện tại bên em đang ở giai đoạn thử nghiệm ạ.", "現在は試験の段階です", 6],
+    ["Tiến độ dự án đang đúng kế hoạch ạ.", "プロジェクトの進捗は計画通りです", 6],
+    ["Hồ sơ còn thiếu mã sản phẩm ạ.", "書類に製品コードがまだ足りません", 6],
+    ["Thông tin này chưa chính xác, em sửa lại ngay ạ.", "この情報はまだ正確ではないので、すぐ直します", 6],
+    ["Nếu có lỗi, em sẽ xử lý và báo lại cho anh ạ.", "不具合があれば、対応してご報告します", 6],
+    ["Sản phẩm của anh cần thử nghiệm tương thích điện từ và an toàn ạ.", "お客様の製品はEMCと安全性の試験が必要です", 7],
+    ["Sản phẩm này dùng pin hay nguồn điện ạ?", "この製品は電池式ですか、それとも電源供給ですか", 7],
+    ["Điện áp của thiết bị là bao nhiêu vậy ạ?", "この機器の電圧はいくつですか", 7],
+    ["Thử nghiệm sóng vô tuyến bắt buộc hay không là tùy vào sản phẩm ạ.", "無線(RF)試験が必須かどうかは製品によります", 7],
+    ["Anh gửi giùm em cấu hình phần mềm nghen.", "ソフトウェアの設定情報を送ってくださいね", 7],
+    ["Anh đóng gói mẫu cẩn thận rồi vận chuyển qua bên em nghen.", "サンプルを丁寧に梱包して、こちらへ輸送してくださいね", 7],
+    ["Mẫu đang ở hải quan nên chưa đến phòng thí nghiệm ạ.", "サンプルは税関にあるので、まだラボに届いていません", 7],
+    ["Máy đo đã được hiệu chuẩn đúng quy định ạ.", "測定器は規定どおりに校正済みです", 7],
+    ["Anh gửi bản gốc có chữ ký, còn bản sao thì gửi email ạ.", "署名入りの原本を送って、コピーはメールで送ってください", 7],
+    ["Bình thường mất hai tuần, nếu anh cần nhanh thì em ưu tiên ạ.", "通常は2週間ですが、お急ぎなら優先して対応します", 7]
+,
+    ["Mình thảo luận về kế hoạch tháng sau nghen.", "来月の計画について話し合いましょう", 8],
+    ["Anh giải thích thêm giùm em được hông ạ?", "もう少し説明していただけますか", 8],
+    ["Em xin tóm tắt lại những điểm chính ạ.", "主なポイントをまとめ直します", 8],
+    ["Anh nhắc lại mục tiêu của dự án giùm em nghen.", "プロジェクトの目標をもう一度教えてくださいね", 8],
+    ["Anh quyết định chưa, hay còn lựa chọn khác ạ?", "もう決められましたか、それとも他の選択肢もありますか", 8],
+    ["Việc này hơi khó, nhưng em thấy có khả năng ạ.", "これは少し難しいですが、可能性はあると思います", 8],
+    ["Ngân sách của bên anh khoảng bao nhiêu ạ?", "御社の予算はどのくらいですか", 8],
+    ["Nếu so sánh hai phương án thì phương án này rủi ro thấp hơn ạ.", "2案を比べると、こちらの案のほうがリスクが低いです", 8],
+    ["Người phụ trách bên anh là ai, bộ phận nào vậy ạ?", "御社の担当者はどなたで、どの部署ですか", 8],
+    ["Mình thương lượng điều kiện rồi ký thỏa thuận hợp tác nghen.", "条件を交渉してから、協力の合意書にサインしましょう", 8],
+    ["Ý anh là cần thử lại, tức là chưa đạt, đúng hông ạ?", "試験をやり直す、つまり不合格ということで合っていますか", 9],
+    ["Anh nói cụ thể hơn một chút được hông ạ?", "もう少し具体的に言っていただけますか", 9],
+    ["Đại khái là khoảng hai tuần, chi tiết em sẽ gửi sau nghen.", "だいたい2週間くらいで、詳細は後で送りますね", 9],
+    ["Đầu tiên em xin phép trình bày điểm chính ạ.", "まず、主なポイントを説明させていただきます", 9],
+    ["Cuối cùng, em xin cảm ơn anh đã lắng nghe ạ.", "最後に、聞いてくださりありがとうございました", 9],
+    ["Thật ra bên em cũng thắc mắc chuyện này ạ.", "実は、私たちもこの件は疑問に思っています", 9],
+    ["Dĩ nhiên rồi, em luôn luôn cập nhật cho anh nghen.", "もちろんです、いつもご報告しますね", 9],
+    ["Chắc là có hiểu lầm chút xíu, để em kiểm tra lại ạ.", "少し誤解があったかもしれません、確認し直します", 9],
+    ["Mặc dù quy trình hơi phức tạp, nhưng em sẽ giải thích đơn giản và rõ ràng ạ.", "手順は少し複雑ですが、簡単に分かりやすく説明します", 9],
+    ["Bên em thường trả lời trong ngày, đôi khi cần hai ngày, anh yên tâm nghen.", "通常は当日中に返信し、たまに2日かかりますが、ご安心くださいね", 9],
+    ["Hôm nay trời nóng quá, hông biết chiều có mưa hông ạ.", "今日は暑すぎますね、午後は雨が降るでしょうか", 10],
+    ["Ở Sài Gòn kẹt xe nhiều lắm, em quen rồi ạ.", "サイゴンは渋滞がすごいですが、もう慣れました", 10],
+    ["Cuối tuần anh có đi đâu hông ạ?", "週末はどこかに行かれますか", 10],
+    ["Gia đình anh khỏe hông ạ?", "ご家族はお元気ですか", 10],
+    ["Anh thích uống cà phê hay trà ạ?", "コーヒーとお茶、どちらがお好きですか", 10],
+    ["Em mời anh ăn trưa ở quán này nghen.", "このお店で昼ごはんをご馳走しますね", 10],
+    ["Món này ngon quá, em ăn no rồi ạ.", "これはおいしすぎて、もうお腹いっぱいです", 10],
+    ["Em hơi đói, mình đi ăn tối nghen.", "ちょっとお腹がすいたので、夕食に行きましょう", 10],
+    ["Một, hai, ba, dô! Hôm nay nhậu vui quá ạ.", "1、2、3、乾杯!今日は飲んで楽しいですね", 10],
+    ["Em mới vào miền Nam nên cái gì cũng mới lạ ạ.", "南部に来たばかりなので、何もかも新鮮です", 10],
+    ["Thứ hai tuần sau em rảnh cả ngày ạ.", "来週の月曜は一日中空いています", 11],
+    ["Thứ sáu này em xin phép đến trễ một chút nghen.", "今週の金曜は、少し遅れて行きます", 11],
+    ["Chủ nhật bên em nghỉ, thứ hai mới làm việc lại ạ.", "日曜は休みで、月曜からまた仕事です", 11],
+    ["Cuối tháng này em sẽ gửi báo cáo cho anh ạ.", "今月末に報告書をお送りします", 11],
+    ["Đầu tháng sau mình họp lại nghen.", "来月初めにまた会議をしましょう", 11],
+    ["Hôm qua em đã gửi email, anh nhận được chưa ạ?", "昨日メールを送りましたが、届きましたか", 11],
+    ["Ngày lễ bên em nghỉ, nên giao hàng sẽ muộn hơn ạ.", "祝日は休みなので、納品は遅くなります", 11],
+    ["Em sẽ đến đúng giờ, có thể sớm hơn chút xíu ạ.", "時間どおりに行きます、少し早いかもしれません", 11],
+    ["Thời hạn nộp hồ sơ là thứ năm này ạ.", "書類の提出期限は今週の木曜です", 11],
+    ["Mỗi tuần em báo cáo tiến độ một lần ạ.", "毎週1回、進捗を報告します", 11],
+    ["Anh gửi giùm em đường link họp trực tuyến nghen.", "オンライン会議のリンクを送ってくださいね", 12],
+    ["Em hông nghe rõ, âm thanh bị nhỏ quá ạ.", "よく聞こえません、音が小さすぎます", 12],
+    ["Anh bật micro lên giùm em được hông ạ?", "マイクをオンにしていただけますか", 12],
+    ["Anh tắt tiếng giùm em nghen, bên em hơi ồn.", "ミュートにしてくださいね、こちらが少しうるさいので", 12],
+    ["Đường truyền yếu quá, em kết nối lại ngay ạ.", "回線が弱すぎるので、すぐ接続し直します", 12],
+    ["Em bị mất kết nối, để em đăng nhập lại nghen.", "接続が切れたので、ログインし直しますね", 12],
+    ["Em chia sẻ màn hình cho anh xem được hông ạ?", "画面を共有してお見せしてもいいですか", 12],
+    ["Anh nhắn tin cho em, em gọi lại liền nghen.", "メッセージをください、すぐかけ直しますね", 12],
+    ["Em để lại lời nhắn cho anh rồi ạ.", "伝言を残しておきました", 12],
+    ["Anh tải tệp về, mở bằng mật khẩu em gửi trong tin nhắn nghen.", "ファイルをダウンロードして、メッセージで送ったパスワードで開いてくださいね", 12]
+  ],
+  words: [
+    ["báo giá", "見積"], ["đơn hàng", "注文"], ["đặt hàng", "発注する"], ["mẫu", "サンプル"],
+    ["thử nghiệm", "試験"], ["chứng nhận", "認証"], ["quy chuẩn", "技術基準"], ["tiêu chuẩn", "規格"],
+    ["báo cáo", "レポート"], ["thời gian giao hàng", "納期"], ["lịch", "スケジュール"], ["hồ sơ", "申請書類"],
+    ["xác nhận", "確認"], ["chi phí", "費用"], ["khách hàng", "お客さん"], ["hợp đồng", "契約"],
+    ["thanh toán", "支払い"], ["hóa đơn", "請求書"], ["phòng thí nghiệm", "試験所"], ["sản phẩm", "製品"],
+    ["nói lại", "言い直す・もう一回言う"], ["chậm lại", "ゆっくりにする"], ["hiểu", "理解する"], ["không hiểu", "分からない"],
+    ["cuộc họp", "会議", 1], ["đề xuất", "提案", 1], ["yêu cầu", "要求・依頼", 1], ["vấn đề", "問題", 1],
+    ["giải pháp", "解決策", 1], ["hạn chót", "締め切り", 1], ["trễ", "遅れる", 1], ["gấp", "急ぎ", 1],
+    ["giá", "価格", 1], ["giảm giá", "値引き", 1], ["tổng cộng", "合計", 1], ["đã bao gồm", "含まれている", 1],
+    ["chưa bao gồm", "含まれていない", 1], ["kết quả", "結果", 1], ["đạt", "合格・適合", 1], ["không đạt", "不合格・不適合", 1],
+    ["tài liệu", "資料・書類", 1], ["thiết bị", "機器", 1], ["nhà sản xuất", "メーカー", 1], ["nhập khẩu", "輸入", 1],
+    ["nhãn", "ラベル", 1], ["chứng nhận hợp quy", "適合認証(CR)", 1], ["công bố hợp quy", "適合宣言", 1],
+    ["thông số kỹ thuật", "技術仕様", 1], ["hạng mục", "項目", 1], ["dự án", "プロジェクト", 1],
+    ["thuế VAT", "消費税(VAT)", 1], ["biên bản cuộc họp", "議事録", 1],
+    ["lịch họp", "会議の予定", 2], ["hôm nay", "今日", 2], ["ngày mai", "明日", 2], ["tuần sau", "来週", 2],
+    ["tuần này", "今週", 2], ["tháng sau", "来月", 2], ["buổi sáng", "午前", 2], ["buổi chiều", "午後", 2],
+    ["giờ", "〜時・時間", 2], ["phút", "分", 2], ["bắt đầu", "始める", 2], ["kết thúc", "終わる", 2],
+    ["tiếp tục", "続ける", 2], ["đồng ý", "同意する", 2], ["không đồng ý", "同意しない", 2], ["đúng rồi", "その通り", 2],
+    ["chắc chắn", "確実・間違いない", 2], ["có thể", "できる・かもしれない", 2], ["không thể", "できない", 2], ["cần", "必要", 2],
+    ["biết", "知っている", 2], ["chưa biết", "まだ知らない・分からない", 2], ["hỏi", "聞く・質問する", 2],
+    ["trả lời", "答える", 2], ["quan trọng", "重要", 2],
+    ["không", "ゼロ", 3], ["một", "1", 3], ["hai", "2", 3], ["ba", "3", 3], ["bốn", "4", 3], ["năm", "5(年も同じ音)", 3],
+    ["sáu", "6", 3], ["bảy", "7", 3], ["tám", "8", 3], ["chín", "9", 3], ["mười", "10", 3],
+    ["trăm", "百", 3], ["ngàn", "千(南部。北部は nghìn)", 3], ["triệu", "百万", 3],
+    ["đồng", "ドン(通貨)", 3], ["đô la", "ドル", 3], ["bao nhiêu", "いくら・いくつ", 3],
+    ["số lượng", "数量", 3], ["đơn giá", "単価", 3], ["mỗi", "〜ごと・それぞれ", 3],
+    ["cái", "〜個(物を数える)", 3], ["bộ", "セット", 3], ["tăng", "増える・上がる", 3],
+    ["giảm", "減る・下がる", 3], ["khoảng", "約・だいたい", 3],
+    ["email", "メール", 4], ["gửi", "送る", 4], ["nhận", "受け取る", 4], ["đính kèm", "添付する", 4],
+    ["tệp đính kèm", "添付ファイル", 4], ["phản hồi", "返信・フィードバック", 4], ["điện thoại", "電話", 4],
+    ["gọi", "電話する・呼ぶ", 4], ["số điện thoại", "電話番号", 4], ["liên hệ", "連絡する", 4],
+    ["bận", "忙しい", 4], ["rảnh", "空いている・暇", 4], ["chờ", "待つ", 4],
+    ["một chút", "少し(南部は chút xíu とも)", 4], ["xin lỗi", "すみません", 4], ["cảm ơn", "ありがとう", 4],
+    ["không sao", "大丈夫・問題ない", 4], ["địa chỉ", "住所・アドレス", 4], ["kiểm tra", "確認する・チェックする", 4],
+    ["sửa", "直す・修正する", 4], ["cập nhật", "更新する", 4], ["phiên bản", "バージョン", 4],
+    ["trước", "前・先に", 4], ["sau", "後・あとで", 4], ["tiếp theo", "次の", 4],
+    ["vì", "〜だから(理由)", 5], ["nên", "だから・〜なので", 5], ["cho nên", "だから(文頭)", 5],
+    ["nhưng", "しかし・でも", 5], ["tuy nhiên", "ただし・しかしながら", 5], ["nếu", "もし", 5],
+    ["thì", "〜なら・〜は", 5], ["hoặc", "または", 5], ["và", "と・そして", 5], ["với", "〜と・〜に対して", 5],
+    ["cũng", "〜も", 5], ["đã", "〜した(過去)", 5], ["đang", "〜している", 5], ["sẽ", "〜する(未来)", 5],
+    ["chưa", "まだ〜ない", 5], ["rồi", "もう・〜済み", 5], ["vẫn", "まだ・やはり", 5],
+    ["rất", "とても", 5], ["hơi", "ちょっと・やや", 5], ["lắm", "すごく(文末)", 5],
+    ["thêm", "追加で・さらに", 5], ["nữa", "もっと・また", 5], ["ví dụ", "例えば", 5],
+    ["lý do", "理由", 5], ["ý kiến", "意見", 5],
+    ["đăng ký", "登録・申請する", 6], ["nộp", "提出する", 6], ["phê duyệt", "承認する", 6],
+    ["cấp", "発行する", 6], ["giấy chứng nhận", "認証書", 6], ["hiệu lực", "有効・効力", 6],
+    ["hết hạn", "期限切れになる", 6], ["gia hạn", "延長・更新する", 6], ["quy trình", "手順・プロセス", 6],
+    ["bước", "ステップ", 6], ["giai đoạn", "段階", 6], ["tiến độ", "進捗", 6],
+    ["hoàn thành", "完了する", 6], ["xử lý", "処理・対応する", 6], ["đủ", "十分・足りる", 6],
+    ["thiếu", "不足・足りない", 6], ["sai", "間違い・違う", 6], ["chính xác", "正確", 6],
+    ["lỗi", "不具合・エラー", 6], ["cải thiện", "改善する", 6], ["thay đổi", "変更する", 6],
+    ["cơ quan quản lý", "規制当局", 6], ["phí", "手数料・料金", 6], ["mã sản phẩm", "製品コード", 6],
+    ["mẫu thử", "試験用サンプル", 6],
+    ["tương thích điện từ", "EMC・電磁両立性", 7], ["an toàn", "安全", 7], ["sóng vô tuyến", "無線(RF)", 7],
+    ["đo", "測定する", 7], ["máy đo", "測定器", 7], ["hiệu chuẩn", "校正", 7],
+    ["chuẩn bị", "準備する", 7], ["đóng gói", "梱包する", 7], ["vận chuyển", "輸送する", 7],
+    ["hải quan", "税関", 7], ["ưu tiên", "優先する", 7], ["nhanh", "早い・急ぎ", 7],
+    ["bình thường", "通常・普通", 7], ["bắt buộc", "必須", 7], ["tùy vào", "〜次第・による", 7],
+    ["pin", "電池", 7], ["nguồn điện", "電源", 7], ["điện áp", "電圧", 7],
+    ["không dây", "ワイヤレス", 7], ["cấu hình", "設定・構成", 7], ["phần mềm", "ソフトウェア", 7],
+    ["bản sao", "コピー", 7], ["bản gốc", "原本", 7], ["chữ ký", "署名", 7],
+    ["thị trường", "市場", 7],
+    ["thảo luận", "話し合う", 8], ["giải thích", "説明する", 8], ["tóm tắt", "要約する", 8],
+    ["nhắc lại", "言い直す・念押しする", 8], ["mục tiêu", "目標", 8], ["kế hoạch", "計画", 8],
+    ["quyết định", "決める・決定", 8], ["lựa chọn", "選択肢・選ぶ", 8], ["khó", "難しい", 8],
+    ["dễ", "簡単", 8], ["khả năng", "可能性・能力", 8], ["cơ hội", "機会・チャンス", 8],
+    ["rủi ro", "リスク", 8], ["ngân sách", "予算", 8], ["so sánh", "比較する", 8],
+    ["đối tác", "パートナー・取引先", 8], ["người phụ trách", "担当者", 8], ["bộ phận", "部署", 8],
+    ["giám đốc", "社長・部長", 8], ["nhân viên", "社員・スタッフ", 8], ["thương lượng", "交渉する", 8],
+    ["thỏa thuận", "合意・取り決め", 8], ["điều kiện", "条件", 8], ["hỗ trợ", "サポートする", 8],
+    ["hợp tác", "協力・提携", 8],
+    ["nghĩa là", "つまり・意味は", 9], ["tức là", "すなわち", 9], ["cụ thể", "具体的", 9],
+    ["đại khái", "だいたい", 9], ["chi tiết", "詳細", 9], ["điểm chính", "主なポイント", 9],
+    ["xin phép", "〜させていただく", 9], ["đầu tiên", "まず・最初に", 9], ["cuối cùng", "最後に", 9],
+    ["thật ra", "実は", 9], ["dĩ nhiên", "もちろん", 9], ["có lẽ", "たぶん", 9],
+    ["chắc là", "おそらく", 9], ["thường", "普段・よく", 9], ["luôn luôn", "いつも", 9],
+    ["đôi khi", "たまに", 9], ["ngoài ra", "そのほか", 9], ["mặc dù", "〜だけれども", 9],
+    ["do đó", "したがって", 9], ["yên tâm", "安心する", 9], ["rõ ràng", "明確・はっきり", 9],
+    ["phức tạp", "複雑", 9], ["đơn giản", "簡単・シンプル", 9], ["hiểu lầm", "誤解", 9],
+    ["thắc mắc", "疑問・気になる", 9],
+    ["thời tiết", "天気", 10], ["nóng", "暑い・熱い", 10], ["mát", "涼しい", 10],
+    ["mưa", "雨", 10], ["kẹt xe", "渋滞", 10], ["cuối tuần", "週末", 10],
+    ["gia đình", "家族", 10], ["ăn", "食べる", 10], ["uống", "飲む", 10],
+    ["cà phê", "コーヒー", 10], ["ăn trưa", "昼ごはん", 10], ["ngon", "おいしい", 10],
+    ["nhà hàng", "レストラン", 10], ["mời", "招待する・ご馳走する", 10], ["quán", "お店・食堂", 10],
+    ["nhậu", "お酒を飲む", 10], ["dô", "乾杯(南部)", 10], ["no", "お腹いっぱい", 10],
+    ["đói", "お腹がすいた", 10], ["khỏe", "元気", 10], ["mệt", "疲れた", 10],
+    ["vui", "楽しい", 10], ["miền Nam", "南部", 10], ["quen", "慣れる・知っている", 10],
+    ["thích", "好き", 10],
+    ["thứ hai", "月曜日", 11], ["thứ ba", "火曜日", 11], ["thứ tư", "水曜日", 11],
+    ["thứ năm", "木曜日", 11], ["thứ sáu", "金曜日", 11], ["thứ bảy", "土曜日", 11],
+    ["chủ nhật", "日曜日", 11], ["ngày", "日・日にち", 11], ["tuần", "週", 11],
+    ["tháng", "月・か月", 11], ["năm nay", "今年", 11], ["hôm qua", "昨日", 11],
+    ["buổi tối", "夕方・夜", 11], ["buổi trưa", "昼", 11], ["đầu tháng", "月初", 11],
+    ["cuối tháng", "月末", 11], ["ngày nghỉ", "休日", 11], ["ngày lễ", "祝日", 11],
+    ["sớm", "早く", 11], ["muộn", "遅い・遅く", 11], ["đúng giờ", "時間どおり", 11],
+    ["thời hạn", "期限", 11], ["mỗi ngày", "毎日", 11], ["mỗi tuần", "毎週", 11],
+    ["lịch làm việc", "勤務予定・スケジュール", 11],
+    ["trực tuyến", "オンライン", 12], ["đường truyền", "回線・通信", 12], ["mạng", "ネットワーク", 12],
+    ["âm thanh", "音声", 12], ["chia sẻ màn hình", "画面共有", 12], ["micro", "マイク", 12],
+    ["tắt tiếng", "ミュートにする", 12], ["bật", "オンにする", 12], ["tắt", "オフにする・消す", 12],
+    ["kết nối", "接続する", 12], ["mất kết nối", "接続が切れる", 12], ["đăng nhập", "ログインする", 12],
+    ["đường link", "リンク", 12], ["mật khẩu", "パスワード", 12], ["gọi lại", "かけ直す", 12],
+    ["nhắn tin", "メッセージを送る", 12], ["tin nhắn", "メッセージ", 12], ["lời nhắn", "伝言", 12],
+    ["sóng yếu", "電波が弱い", 12], ["nghe rõ", "よく聞こえる", 12], ["nghe không rõ", "よく聞こえない", 12],
+    ["mở", "開く", 12], ["đóng", "閉じる", 12], ["tải về", "ダウンロードする", 12],
+    ["ồn", "うるさい", 12]
+  ]
+};
+const ETY = {"báo giá": ["báo=報 + giá=価", "報価=「価格を知らせる」→見積。中国語の報価と同じ作り。"], "đơn hàng": ["đơn=単 + hàng=行", "単=伝票。行は ngân hàng(銀行)の行で、店→商品の意味に。商品の伝票→注文。"], "đặt hàng": ["đặt=置く・予約する(固有語) + hàng=行(商品)", "商品を置く(予約する)→発注する。"], "mẫu": ["mẫu=見本・型(漢字は母とする説があるが不確か)"], "thử nghiệm": ["thử=試 + nghiệm=験", "試験。日本語と同じ。"], "chứng nhận": ["chứng=証 + nhận=認", "証認=認証。日本語と語順が逆。"], "quy chuẩn": ["quy=規 + chuẩn=準", "規準。決まりとしての基準→技術基準。"], "tiêu chuẩn": ["tiêu=標 + chuẩn=準", "標準。標準として定めたもの→規格。"], "báo cáo": ["báo=報 + cáo=告", "報告。日本語と同じ。"], "thời gian giao hàng": ["thời gian=時間 + giao=交 + hàng=行(商品)", "交=渡す。「商品を渡す時間」→納期。"], "lịch": ["lịch=暦", "暦=カレンダー→スケジュール。"], "hồ sơ": ["hồ sơ=書類一式(語源は不確か)"], "xác nhận": ["xác=確 + nhận=認", "確認。日本語と同じ。"], "chi phí": ["chi=支 + phí=費", "支費=支払う費用→費用。"], "khách hàng": ["khách=客 + hàng=行", "行=店・商い。店の客→お客さん(取引先)。"], "hợp đồng": ["hợp=合 + đồng=同", "合同=合わせて同じにする→契約。日本語の「合同」と同じ字。"], "thanh toán": ["thanh=清 + toán=算", "清算=お金を清めて計算→支払い。"], "hóa đơn": ["hóa=貨 + đơn=単", "貨単=商品の伝票→請求書。"], "phòng thí nghiệm": ["phòng=房 + thí=試 + nghiệm=験", "房=部屋。「試験の部屋」→試験所。"], "sản phẩm": ["sản=産 + phẩm=品", "産品→製品。"], "nói lại": ["固有語", "nói=言う、lại=再び。"], "chậm lại": ["固有語", "chậm=遅い、lại=再び・元に。"], "hiểu": ["hiểu=暁", "暁=夜が明ける→分かる、理解する。"], "không hiểu": ["không=不(否定) + hiểu=暁", "không=空・否定。「理解しない」。"], "cuộc họp": ["cuộc=局(古い借用) + họp=集まる", "局=一つの場。集まる場→会議。"], "đề xuất": ["đề=提 + xuất=出", "提出。中国語では「提案する」の意味。"], "yêu cầu": ["yêu=要 + cầu=求", "要求。日本語と同じ。"], "vấn đề": ["vấn=問 + đề=題", "問題。日本語と同じ。"], "giải pháp": ["giải=解 + pháp=法", "解法→解決策。"], "hạn chót": ["hạn=限 + chót=最後(固有語)", "「限りの最後」→締め切り。"], "trễ": ["固有語"], "gấp": ["固有語"], "giá": ["giá=価", "価。価格。"], "giảm giá": ["giảm=減 + giá=価", "減価→値引き。"], "tổng cộng": ["tổng=総 + cộng=共", "総共→合計。"], "đã bao gồm": ["đã=〜済み(固有語) + bao=包 + gồm=含む(固有語)", "「包んで含む」→含まれている。"], "chưa bao gồm": ["chưa=まだ〜ない(固有語) + bao=包 + gồm=含む(固有語)", "含まれていない。"], "kết quả": ["kết=結 + quả=果", "結果。日本語と同じ。"], "đạt": ["đạt=達", "達する→合格・適合。"], "không đạt": ["không=不(否定) + đạt=達", "達しない→不合格。"], "tài liệu": ["tài=材 + liệu=料", "材料→資料。"], "thiết bị": ["thiết=設 + bị=備", "設備→機器。"], "nhà sản xuất": ["nhà=家(固有語) + sản=産 + xuất=出", "産出する家→メーカー。"], "nhập khẩu": ["nhập=入 + khẩu=口", "入口。荷物が入る口→輸入。"], "nhãn": ["nhãn=ラベル(語源は不確か)"], "chứng nhận hợp quy": ["chứng nhận=認証 + hợp=合 + quy=規", "合規=規則に合う→適合認証。"], "công bố hợp quy": ["công=公 + bố=布 + hợp=合 + quy=規", "公布=広く知らせる。「規則に合うと公表」→適合宣言。"], "thông số kỹ thuật": ["thông=通 + số=数 + kỹ=技 + thuật=術", "技術+通じる数値→技術仕様。"], "hạng mục": ["hạng=項 + mục=目", "項目。日本語と同じ。"], "dự án": ["dự=予 + án=案", "予案→プロジェクト(計画案)。"], "thuế VAT": ["thuế=税", "税。VATは付加価値税(消費税)。"], "biên bản cuộc họp": ["biên=編 + bản=本 + cuộc họp=会議", "編本=まとめて書いた記録→議事録。熟語はベトナム独自。"], "lịch họp": ["lịch=暦 + họp=集まる(固有語)", "会議のカレンダー→会議の予定。"], "hôm nay": ["固有語", "hôm=日、nay=今。"], "ngày mai": ["固有語", "ngày=日、mai=翌。"], "tuần sau": ["tuần=旬 + sau=後(固有語)", "旬=10日→7日の週。"], "tuần này": ["tuần=旬 + này=この(固有語)"], "tháng sau": ["固有語(月の漢越語は nguyệt)", "tháng=月、sau=後。"], "buổi sáng": ["固有語", "buổi=時間帯、sáng=朝・明るい。"], "buổi chiều": ["固有語", "buổi=時間帯、chiều=午後。"], "giờ": ["giờ=時(古い時代の借用)", "時=時間。今の漢越語の読みは thời(thời gian=時間)。"], "phút": ["固有語(分の漢越語は phân)"], "bắt đầu": ["bắt=捕まえる(固有語) + đầu=頭", "頭をつかむ→始める。đầu は頭の漢越語。"], "kết thúc": ["kết=結 + thúc=束", "結束→終わる。"], "tiếp tục": ["tiếp=接 + tục=続", "接続→続ける。"], "đồng ý": ["đồng=同 + ý=意", "同意。日本語と同じ。"], "không đồng ý": ["không=不(否定) + đồng=同 + ý=意", "不同意。"], "đúng rồi": ["固有語", "đúng=正しい、rồi=済み。"], "chắc chắn": ["固有語"], "có thể": ["có=ある(固有語) + thể=体", "体=やり方・形。「やり方がある」→できる。"], "không thể": ["không=否定 + có thể", "できない。"], "cần": ["固有語"], "biết": ["固有語"], "chưa biết": ["固有語", "chưa=まだ〜ない、biết=知る。"], "hỏi": ["固有語"], "trả lời": ["固有語", "trả=返す、lời=言葉。"], "quan trọng": ["quan=関 + trọng=重", "関わりが重い→重要。日本語は「重要」。"], "không": ["không=空", "空=から→ゼロ。否定の「ない」にも使う。"], "một": ["固有語(一の漢越語は nhất)", "nhất=一。例: nhất định=一定。"], "hai": ["固有語(二の漢越語は nhị)", "nhị=二。"], "ba": ["固有語(三の漢越語は tam)", "tam=三。例: tam giác=三角。"], "bốn": ["固有語(四の漢越語は tứ)", "tứ=四。"], "năm": ["固有語(五の漢越語は ngũ)", "ngũ=五。年は niên。"], "sáu": ["固有語(六の漢越語は lục)", "lục=六。"], "bảy": ["固有語(七の漢越語は thất)", "thất=七。"], "tám": ["固有語(八の漢越語は bát)", "bát=八。"], "chín": ["固有語(九の漢越語は cửu)", "cửu=九。"], "mười": ["固有語(十の漢越語は thập)", "thập=十。"], "trăm": ["固有語(百の漢越語は bách)", "bách=百。例: bách hóa=百貨。"], "ngàn": ["固有語(千の漢越語は thiên)", "thiên=千。"], "triệu": ["triệu=兆", "兆。ただし日本語の兆(1兆)とは違い、triệu=100万。"], "đồng": ["đồng=銅", "銅。昔の銅貨→通貨の「ドン」。"], "đô la": ["外来語(ドル)"], "bao nhiêu": ["固有語"], "số lượng": ["số=数 + lượng=量", "数量。日本語と同じ。"], "đơn giá": ["đơn=単 + giá=価", "単価。日本語と同じ。"], "mỗi": ["mỗi=毎", "毎。毎日、毎回の「毎」。"], "cái": ["固有語", "物を数える助数詞。"], "bộ": ["bộ=部", "部→セット(一組)。"], "tăng": ["tăng=増", "増。増える。"], "giảm": ["giảm=減", "減。減る。"], "khoảng": ["固有語"], "email": ["外来語(メール)"], "gửi": ["gửi=寄(古い時代の借用・推定)", "寄せる→送る。今の漢越語の読みは ký。"], "nhận": ["nhận=認", "認める→受け取る。chứng nhận の nhận と同じ。"], "đính kèm": ["đính=訂 + kèm=添える(固有語)", "訂=綴じる(中国語の装訂)。綴じて添える→添付する。"], "tệp đính kèm": ["固有語(tệp=ファイル) + đính kèm=添付"], "phản hồi": ["phản=反 + hồi=回", "反回→返ってくる→返信。"], "điện thoại": ["điện=電 + thoại=話", "電話。日本語と同じ。"], "gọi": ["固有語"], "số điện thoại": ["số=数・番号 + điện thoại=電話", "電話番号。"], "liên hệ": ["liên=連 + hệ=係・系", "連係(連繋)→連絡する。"], "bận": ["固有語"], "rảnh": ["固有語"], "chờ": ["固有語"], "một chút": ["固有語(một=1、chút=少し)"], "xin lỗi": ["固有語", "xin=請う、lỗi=誤り・過ち。"], "cảm ơn": ["cảm=感 + ơn=恩", "感恩→恩に感謝→ありがとう。"], "không sao": ["固有語", "không=ない、sao=どうして→問題ない。"], "địa chỉ": ["địa=地 + chỉ=址", "地址→住所。"], "kiểm tra": ["kiểm=検 + tra=査", "検査→確認する。"], "sửa": ["固有語"], "cập nhật": ["cập=及 + nhật=日", "日付に及ぶ(追いつく)→最新にする→更新。ベトナム独自の熟語。"], "phiên bản": ["phiên=翻 + bản=版", "翻版=版を作り直したもの→バージョン。phiên dịch=翻訳 の phiên。"], "trước": ["固有語(前の漢越語は tiền)"], "sau": ["固有語(後の漢越語は hậu)"], "tiếp theo": ["tiếp=接 + theo=従う(固有語)", "続いて→次の。"], "vì": ["vì=為", "為→〜のために・〜だから。"], "nên": ["固有語"], "cho nên": ["固有語", "cho=〜に、nên=〜なので。"], "nhưng": ["固有語"], "tuy nhiên": ["tuy=雖 + nhiên=然", "雖然=〜ではあるが。"], "nếu": ["固有語"], "thì": ["thì=時(推定)", "時→「〜のときは」→〜なら。文法語としての由来は確定していない。"], "hoặc": ["hoặc=或", "或。或いは。"], "và": ["固有語"], "với": ["固有語"], "cũng": ["固有語"], "đã": ["固有語"], "đang": ["固有語"], "sẽ": ["固有語"], "chưa": ["固有語"], "rồi": ["固有語"], "vẫn": ["固有語"], "rất": ["固有語"], "hơi": ["固有語"], "lắm": ["固有語"], "thêm": ["固有語"], "nữa": ["固有語"], "ví dụ": ["ví=譬(thí の口語形) + dụ=喩", "譬喩=たとえ→例えば。書き言葉では thí dụ とも言う。"], "lý do": ["lý=理 + do=由", "理由。日本語と同じ。"], "ý kiến": ["ý=意 + kiến=見", "意見。日本語と同じ。"], "đăng ký": ["đăng=登 + ký=記", "登記→登録。"], "nộp": ["nộp=納", "納める→提出する。"], "phê duyệt": ["phê=批 + duyệt=閲", "批閲=目を通して可否を決める→承認。"], "cấp": ["cấp=給", "給→与える→発行する。"], "giấy chứng nhận": ["giấy=紙(古い時代の借用) + chứng nhận=認証", "認証の紙→認証書。"], "hiệu lực": ["hiệu=効 + lực=力", "効力。日本語と同じ。"], "hết hạn": ["hết=尽きる(固有語) + hạn=限", "限りが尽きる→期限切れ。"], "gia hạn": ["gia=加 + hạn=限", "加限→期限を加える→延長。"], "quy trình": ["quy=規 + trình=程", "規程→手順・プロセス。"], "bước": ["固有語"], "giai đoạn": ["giai=階 + đoạn=段", "階段→段階。日本語と逆順。"], "tiến độ": ["tiến=進 + độ=度", "進度→進捗。"], "hoàn thành": ["hoàn=完 + thành=成", "完成→完了する。"], "xử lý": ["xử=処 + lý=理", "処理。日本語と同じ。"], "đủ": ["固有語"], "thiếu": ["thiếu=少", "少ない→不足。thiếu niên=少年 の thiếu。"], "sai": ["固有語"], "chính xác": ["chính=正 + xác=確", "正確。日本語と同じ。"], "lỗi": ["固有語"], "cải thiện": ["cải=改 + thiện=善", "改善。日本語と同じ。"], "thay đổi": ["固有語", "thay=替える、đổi=換える。"], "cơ quan quản lý": ["cơ quan=機関 + quản=管 + lý=理", "管理機関→規制当局。"], "phí": ["phí=費", "費。手数料・費用。"], "mã sản phẩm": ["mã=碼(コード) + sản phẩm=産品", "碼=数字や記号→コード。"], "mẫu thử": ["mẫu=見本 + thử=試", "試す見本→試験用サンプル。"], "tương thích điện từ": ["tương=相 + thích=適 + điện từ=電磁", "相適+電磁→電磁両立性(EMC)。"], "an toàn": ["an=安 + toàn=全", "安全。日本語と同じ。"], "sóng vô tuyến": ["sóng=波(固有語) + vô=無 + tuyến=線", "無線の波→無線(RF)。"], "đo": ["固有語(語源は不確か)"], "máy đo": ["máy=機(古い時代の借用・推定) + đo=測る(固有語)", "測る機械→測定器。"], "hiệu chuẩn": ["hiệu=校 + chuẩn=準", "校準→校正。"], "chuẩn bị": ["chuẩn=準 + bị=備", "準備。日本語と同じ。"], "đóng gói": ["固有語", "đóng=閉じる、gói=包む。"], "vận chuyển": ["vận=運 + chuyển=転", "運転→運んで動かす→輸送する。"], "hải quan": ["hải=海 + quan=関", "海関→税関。"], "ưu tiên": ["ưu=優 + tiên=先", "優先。日本語と同じ。"], "nhanh": ["固有語"], "bình thường": ["bình=平 + thường=常", "平常→通常。"], "bắt buộc": ["固有語", "bắt=捕まえる、buộc=縛る→強制→必須。"], "tùy vào": ["tùy=随", "随→〜に従う→〜次第。"], "pin": ["外来語(フランス語 pile)"], "nguồn điện": ["nguồn=源(固有語) + điện=電", "電気の源→電源。"], "điện áp": ["điện=電 + áp=圧", "電圧。"], "không dây": ["không=空(否定) + dây=線・ひも(固有語)", "線がない→ワイヤレス。"], "cấu hình": ["cấu=構 + hình=形", "構形→構成・設定。"], "phần mềm": ["phần=分 + mềm=柔らかい(固有語)", "柔らかい部分→ソフトウェア。phần trăm=パーセント の phần。"], "bản sao": ["bản=本 + sao=抄", "抄=書き写す。写した本→コピー。"], "bản gốc": ["bản=本 + gốc=根・元(固有語)", "元の本→原本。"], "chữ ký": ["chữ=字(古い時代の借用) + ký=記", "字を記す→署名。ký giả=記者 の ký。"], "thị trường": ["thị=市 + trường=場", "市場。日本語と同じ。"], "thảo luận": ["thảo=討 + luận=論", "討論→話し合う。"], "giải thích": ["giải=解 + thích=釈", "解釈→説明する。"], "tóm tắt": ["固有語", "tóm=つまむ、tắt=短くする→要約。"], "nhắc lại": ["固有語", "nhắc=思い出させる、lại=再び。"], "mục tiêu": ["mục=目 + tiêu=標", "目標。日本語と同じ。"], "kế hoạch": ["kế=計 + hoạch=画", "計画。日本語と同じ。"], "quyết định": ["quyết=決 + định=定", "決定。日本語と同じ。"], "lựa chọn": ["固有語", "lựa=選ぶ、chọn=選ぶ。"], "khó": ["固有語"], "dễ": ["dễ=易(古い時代の借用・推定)", "易しい。今の漢越語の読みは dị。"], "khả năng": ["khả=可 + năng=能", "可能(性)・能力。"], "cơ hội": ["cơ=機 + hội=会", "機会。日本語と同じ。"], "rủi ro": ["固有語"], "ngân sách": ["ngân=銀 + sách=冊", "銀の帳簿→予算。"], "so sánh": ["固有語", "so=比べる、sánh=並べる。"], "đối tác": ["đối=対 + tác=作", "向き合って一緒に作る相手→パートナー。hợp tác=協力 の tác。"], "người phụ trách": ["người=人(固有語) + phụ=負 + trách=責", "負責=責任を負う→担当者。"], "bộ phận": ["bộ=部 + phận=分", "部分→部署。"], "giám đốc": ["giám=監 + đốc=督", "監督→トップ(社長・部長)。"], "nhân viên": ["nhân=人 + viên=員", "人員→社員。"], "thương lượng": ["thương=商 + lượng=量", "商量→相談して決める→交渉。"], "thỏa thuận": ["thỏa=妥 + thuận=順", "妥協+順→合意。"], "điều kiện": ["điều=条 + kiện=件", "条件。日本語と同じ。"], "hỗ trợ": ["hỗ=互 + trợ=助", "互助→サポート。"], "hợp tác": ["hợp=合 + tác=作", "合作→協力。"], "nghĩa là": ["nghĩa=義 + là=〜である(固有語)", "義(意味)は〜である。"], "tức là": ["tức=即 + là=〜である(固有語)", "即ち→すなわち。"], "cụ thể": ["cụ=具 + thể=体", "具体。日本語と同じ。"], "đại khái": ["đại=大 + khái=概", "大概→だいたい。"], "chi tiết": ["chi=支 + tiết=節", "支節→細かい点→詳細。"], "điểm chính": ["điểm=点 + chính=正(主)", "点+主要→主なポイント。"], "xin phép": ["xin=請う(固有語) + phép=法", "法→許可。「許可を請う」→〜させていただく。"], "đầu tiên": ["đầu=頭 + tiên=先", "頭+先→最初に。"], "cuối cùng": ["固有語", "cuối=終わり、cùng=最後。"], "thật ra": ["thật=実(thực の口語形) + ra=出る(固有語)", "実が出る→実は。"], "dĩ nhiên": ["dĩ=已 + nhiên=然", "已然=すでにそうである→もちろん。"], "có lẽ": ["có=ある(固有語) + lẽ=理(lý の口語形)", "道理がある→たぶん。"], "chắc là": ["固有語"], "thường": ["thường=常", "常→普段。"], "luôn luôn": ["固有語"], "đôi khi": ["固有語", "đôi=対・いくつか、khi=とき。"], "ngoài ra": ["固有語(外の漢越語は ngoại)", "ngoài=外、ra=出る。"], "mặc dù": ["固有語"], "do đó": ["do=由 + đó=それ(固有語)", "それに由る→したがって。"], "yên tâm": ["yên=安 + tâm=心", "安心。日本語と同じ。"], "rõ ràng": ["固有語"], "phức tạp": ["phức=複 + tạp=雑", "複雑。日本語と同じ。"], "đơn giản": ["đơn=単 + giản=簡", "単簡→簡単。日本語と逆順。"], "hiểu lầm": ["hiểu=暁(分かる) + lầm=誤る(固有語)", "誤って分かる→誤解。"], "thắc mắc": ["固有語"], "thời tiết": ["thời=時 + tiết=節", "時節→天気。"], "nóng": ["固有語"], "mát": ["固有語"], "mưa": ["固有語"], "kẹt xe": ["kẹt=詰まる(固有語) + xe=車(古い時代の借用)", "車が詰まる→渋滞。"], "cuối tuần": ["cuối=終わり(固有語) + tuần=旬", "週の終わり→週末。"], "gia đình": ["gia=家 + đình=庭", "家庭→家族。"], "ăn": ["固有語"], "uống": ["固有語"], "cà phê": ["外来語(フランス語 café)"], "ăn trưa": ["固有語", "ăn=食べる、trưa=昼。"], "ngon": ["固有語"], "nhà hàng": ["nhà=家(固有語) + hàng=行", "商いの家→レストラン。"], "mời": ["固有語"], "quán": ["quán=館", "館→お店・食堂。"], "nhậu": ["固有語"], "dô": ["固有語", "乾杯の掛け声。"], "no": ["固有語"], "đói": ["固有語"], "khỏe": ["固有語"], "mệt": ["固有語"], "vui": ["固有語"], "miền Nam": ["miền=地方(固有語) + Nam=南", "南。ベトナム語で Nam=南、Bắc=北。"], "quen": ["quen=慣(古い時代の借用・推定)", "慣れる。今の漢越語の読みは quán。"], "thích": ["固有語"], "thứ hai": ["thứ=次 + hai=2", "次の(第)2番目→月曜日。"], "thứ ba": ["thứ=次 + ba=3", "第3→火曜日。"], "thứ tư": ["thứ=次 + tư=4", "第4→水曜日。tư は四の別の言い方。"], "thứ năm": ["thứ=次 + năm=5", "第5→木曜日。"], "thứ sáu": ["thứ=次 + sáu=6", "第6→金曜日。"], "thứ bảy": ["thứ=次 + bảy=7", "第7→土曜日。"], "chủ nhật": ["chủ=主 + nhật=日", "主日→日曜日。"], "ngày": ["固有語(日の漢越語は nhật)"], "tuần": ["tuần=旬", "旬=10日→7日の週。"], "tháng": ["固有語(月の漢越語は nguyệt)"], "năm nay": ["固有語", "năm=年、nay=今。"], "hôm qua": ["固有語", "hôm=日、qua=過ぎた。"], "buổi tối": ["固有語", "buổi=時間帯、tối=夜。"], "buổi trưa": ["固有語", "buổi=時間帯、trưa=昼。"], "đầu tháng": ["đầu=頭 + tháng=月(固有語)", "月の頭→月初。"], "cuối tháng": ["固有語", "cuối=終わり、tháng=月。"], "ngày nghỉ": ["固有語", "ngày=日、nghỉ=休む。"], "ngày lễ": ["ngày=日(固有語) + lễ=礼", "礼の日→祝日。"], "sớm": ["固有語"], "muộn": ["muộn=晩(古い時代の借用・推定)", "晩=遅い。今の漢越語の読みは vãn。"], "đúng giờ": ["固有語", "đúng=正しい、giờ=時間。"], "thời hạn": ["thời=時 + hạn=限", "時限→期限。"], "mỗi ngày": ["mỗi=毎 + ngày=日(固有語)", "毎日。"], "mỗi tuần": ["mỗi=毎 + tuần=旬", "毎週。"], "lịch làm việc": ["lịch=暦 + làm việc=働く(固有語)", "仕事の暦→スケジュール。"], "trực tuyến": ["trực=直 + tuyến=線", "直線→「直接つながった線」→オンライン。日本語の「直結」に近い発想。"], "đường truyền": ["đường=道(固有語) + truyền=伝", "道+伝→「データが伝わる道」→回線・通信。"], "mạng": ["固有語"], "âm thanh": ["âm=音 + thanh=声", "音声。日本語と同じ。"], "chia sẻ màn hình": ["chia sẻ=分け合う(固有語) + màn=幔(幕) + hình=形", "幕に映る形→画面。分け合う+画面→画面共有。"], "micro": ["外来語(マイク)"], "tắt tiếng": ["固有語", "tắt=消す、tiếng=音。"], "bật": ["固有語"], "tắt": ["固有語"], "kết nối": ["kết=結 + nối=つなぐ(固有語)", "結ぶ+つなぐ→接続。"], "mất kết nối": ["mất=失う(固有語) + kết nối=接続", "接続を失う→切れる。"], "đăng nhập": ["đăng=登 + nhập=入", "登入→ログインする。"], "đường link": ["đường=道(固有語) + link=外来語", "リンク。"], "mật khẩu": ["mật=密 + khẩu=口", "秘密の口(言葉)→合言葉→パスワード。khẩu=口 は nhập khẩu(輸入)と同じ。"], "gọi lại": ["固有語", "gọi=呼ぶ・かける、lại=再び。"], "nhắn tin": ["nhắn=伝える(固有語) + tin=信", "信=便り→メッセージを送る。"], "tin nhắn": ["tin=信 + nhắn=伝える(固有語)", "便りを伝える→メッセージ。"], "lời nhắn": ["固有語", "lời=言葉、nhắn=伝える。"], "sóng yếu": ["固有語", "sóng=波、yếu=弱い。"], "nghe rõ": ["固有語", "nghe=聞く、rõ=はっきり。"], "nghe không rõ": ["固有語", "nghe=聞く、không rõ=はっきりしない。"], "mở": ["固有語"], "đóng": ["固有語"], "tải về": ["tải=載 + về=戻る(固有語)", "載せる→手元に載せてくる→ダウンロード。"], "ồn": ["固有語"]};
+
+const $ = id => document.getElementById(id);
+function etyText(e) { return (/^(固有語|外来語)/.test(e[0]) ? "" : "漢越語: ") + e[0]; }
+function paintEty(b, d, key, show, open) {
+  const e = ETY[key], on = !!(e && show);
+  b.hidden = !on; d.hidden = !(on && e[1] && open);
+  if (on) { b.textContent = etyText(e) + (e[1] ? (open ? "  ▲" : "  ▼") : ""); d.textContent = e[1] || ""; }
+}
+const state = { mode: "sentences", idx: 0, shown: false, playing: false, run: 0, rate: 0.85, gap: 2500, rep: 1, hide: 0, favOnly: 0, batch: 0, hold: 0 };
+let marks = new Set();
+try { marks = new Set(JSON.parse(localStorage.getItem("nghe-noi-marks") || "[]")); } catch (e) {}
+function saveMarks() { try { localStorage.setItem("nghe-noi-marks", JSON.stringify([...marks])); } catch (e) {} }
+
+let voice = null;
+function pickVoice() {
+  const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+  voice = vs.find(v => /^vi/i.test(v.lang)) || null;
+  $("warn").hidden = !!voice || vs.length === 0;
+}
+if (window.speechSynthesis) { pickVoice(); speechSynthesis.addEventListener && speechSynthesis.addEventListener("voiceschanged", pickVoice); }
+else { $("warn").hidden = false; $("warn").textContent = "このブラウザは音声読み上げに対応していません。"; }
+
+function list() {
+  const all = DATA[state.mode].filter(x => !state.batch || (x[2] || 1) === state.batch);
+  if (!state.favOnly) return all;
+  const f = all.filter(x => marks.has(x[0]));
+  return f.length ? f : all;
+}
+function cur() { const l = list(); if (state.idx >= l.length) state.idx = 0; return l[state.idx]; }
+
+function speak(text) {
+  return new Promise(res => {
+    try { if (navigator.audioSession) navigator.audioSession.type = "ambient"; } catch (e) {}
+    if (!window.speechSynthesis) return res();
+    try { speechSynthesis.cancel(); } catch (e) {}
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "vi-VN"; if (voice) u.voice = voice; u.rate = state.rate;
+    u.onend = u.onerror = () => res();
+    speechSynthesis.speak(u);
+  });
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function render() {
+  const l = list(), it = cur();
+  $("pos").textContent = (state.idx + 1) + " / " + l.length;
+  const vi = $("vi");
+  vi.textContent = it[0];
+  vi.classList.toggle("hidden", !!state.hide && !state.shown);
+  $("jp").textContent = it[1];
+  $("jp").classList.toggle("hidden", !state.shown);
+  if (state.etyKey !== it[0]) { state.etyKey = it[0]; state.etyOpen = false; }
+  paintEty($("ety"), $("etyD"), it[0], state.shown, state.etyOpen);
+  $("star").setAttribute("aria-pressed", marks.has(it[0]) ? "true" : "false");
+  $("card").classList.toggle("playing", state.playing);
+  $("play").textContent = state.playing ? "停止" : "自動再生";
+  $("listTitle").textContent = (state.mode === "words" ? "単語" : "文") + "一覧(タップで再生)";
+  const box = $("list"); box.textContent = "";
+  l.forEach((x, i) => {
+    const b = document.createElement("button");
+    b.className = "row" + (marks.has(x[0]) ? " marked" : "");
+    if (i === state.idx) b.setAttribute("aria-current", "true");
+    b.innerHTML = '<span class="n"></span><span><div class="v"></div><div class="j"></div></span>';
+    b.querySelector(".n").textContent = i + 1;
+    b.querySelector(".v").textContent = x[0];
+    b.querySelector(".j").textContent = x[1];
+    b.addEventListener("click", () => { stop(); state.idx = i; state.shown = true; render(); speak(x[0]); });
+    box.appendChild(b);
+  });
+}
+
+/* Experimental: during pauses, keep a silent utterance going so iOS keeps the music ducked at a steady level. */
+async function hold(ms) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    await new Promise(res => {
+      let done = false; const fin = () => { if (!done) { done = true; res(); } };
+      try {
+        const u = new SpeechSynthesisUtterance("  ");
+        u.lang = "vi-VN"; u.volume = 0; u.rate = 0.5;
+        u.onend = u.onerror = fin; speechSynthesis.speak(u);
+      } catch (e) { fin(); }
+      setTimeout(fin, Math.max(60, Math.min(600, end - Date.now())));
+    });
+    await sleep(80);
+  }
+}
+const wait = ms => state.hold ? hold(ms) : sleep(ms);
+function stop() {
+  state.playing = false; state.run++;
+  try { speechSynthesis.cancel(); } catch (e) {}
+}
+async function loop() {
+  const my = ++state.run;
+  while (state.playing && my === state.run) {
+    state.shown = false; render();
+    const it = cur();
+    await speak(it[0]); if (my !== state.run) return;
+    await wait(state.gap); if (my !== state.run) return;
+    state.shown = true; render();
+    if (state.rep) { await speak(it[0]); if (my !== state.run) return; }
+    await wait(state.gap); if (my !== state.run) return;
+    state.idx = (state.idx + 1) % list().length;
+  }
+}
+function go(delta) {
+  const wasPlaying = state.playing;
+  stop();
+  const n = list().length;
+  state.idx = (state.idx + delta + n) % n; state.shown = false; render();
+  if (wasPlaying) { state.playing = true; loop(); }
+}
+
+$("play").addEventListener("click", () => {
+  if (state.playing) { stop(); render(); }
+  else { state.playing = true; loop(); }
+});
+$("prev").addEventListener("click", () => go(-1));
+$("next").addEventListener("click", () => go(1));
+$("once").addEventListener("click", () => { const my = ++state.run; state.playing = false; state.shown = true; render(); speak(cur()[0]); });
+$("card").addEventListener("click", e => { if (e.target.closest("button")) return; state.shown = !state.shown; render(); });
+$("star").addEventListener("click", () => {
+  const k = cur()[0]; marks.has(k) ? marks.delete(k) : marks.add(k); saveMarks(); render();
+});
+
+function seg(id, key, num) {
+  $(id).addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    state[key] = num ? Number(b.dataset.v) : b.dataset.v;
+    [...$(id).children].forEach(c => c.setAttribute("aria-pressed", c === b ? "true" : "false"));
+    if (key === "favOnly" || key === "batch") { stop(); state.idx = 0; state.shown = false; }
+    render();
+  });
+}
+seg("rateSeg", "rate", true); seg("gapSeg", "gap", true); seg("holdSeg", "hold", true); seg("repSeg", "rep", true);
+seg("hideSeg", "hide", true); seg("favSeg", "favOnly", true); $("daySel").addEventListener("change", e => {
+  stop(); state.batch = Number(e.target.value); state.idx = 0; state.shown = false; render();
+});
+
+["sentences", "words"].forEach(m => $("m-" + m).addEventListener("click", () => {
+  stop(); state.mode = m; state.idx = 0; state.shown = false;
+  $("m-sentences").setAttribute("aria-pressed", m === "sentences");
+  $("m-words").setAttribute("aria-pressed", m === "words");
+  render();
+}));
+const START = new Date(2026, 9, 14);
+function currentDay() {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.max(1, Math.round((today - START) / 86400000) + 1);
+}
+function renderPlan() {
+  const W_PER = 25, S_PER = 10, DAYS = 90;
+  const day = Math.min(DAYS, currentDay());
+  const phase = day <= 30 ? "1ヶ月目: 会議の基本と聞き返し" : day <= 60 ? "2ヶ月目: 見積・納期・認証の実務" : "3ヶ月目: 雑談・メール・交渉";
+  $("planDay").textContent = "3ヶ月プラン Day " + day + " / " + DAYS;
+  $("planPhase").textContent = phase;
+  const goals = [["w", DATA.words.length, W_PER], ["s", DATA.sentences.length, S_PER]];
+  goals.forEach(([k, have, per]) => {
+    const goal = per * DAYS, expected = per * day;
+    $(k + "Txt").innerHTML = "<b>" + have + "</b> / " + goal.toLocaleString() + "(今日までの目標 " + expected + ")";
+    $(k + "Bar").style.width = Math.min(100, have / goal * 100) + "%";
+    $(k + "Tick").style.left = Math.min(99, expected / goal * 100) + "%";
+  });
+}
+(function initDays() {
+  const all = DATA.sentences.concat(DATA.words);
+  const maxDay = Math.max.apply(null, all.map(x => x[2] || 1));
+  const sel = $("daySel");
+  for (let d = maxDay; d >= 1; d--) {
+    const o = document.createElement("option");
+    o.value = d; o.textContent = "Day " + d + (d === maxDay ? "(最新)" : "");
+    sel.appendChild(o);
+  }
+  const all0 = document.createElement("option");
+  all0.value = 0; all0.textContent = "全部"; sel.appendChild(all0);
+  state.batch = maxDay; sel.value = String(maxDay);
+})();
+/* Review: items come back 1, 3, 7, 14, 30 days after the day they were learned. */
+const GAPS = [1, 2, 4, 7, 16];
+const CAP = 40;
+let srs = {};
+try { srs = JSON.parse(localStorage.getItem("nghe-noi-srs") || "{}") || {}; } catch (e) { srs = {}; }
+function saveSrs() { try { localStorage.setItem("nghe-noi-srs", JSON.stringify(srs)); } catch (e) {} }
+const ALL = DATA.sentences.concat(DATA.words);
+const recOf = x => srs[x[0]] || { s: 0, d: (x[2] || 1) + 1 };
+function dueList(day) {
+  return ALL.filter(x => recOf(x).d <= day).sort((a, b) => recOf(a).d - recOf(b).d || (a[2] || 1) - (b[2] || 1));
+}
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function updateDue() { $("viewReview").textContent = "復習 " + dueList(currentDay()).length; }
+const rv = { queue: [], i: 0, total: 0, rest: 0, revealed: false, mode: "due", dir: "vi2jp", setup: false, missed: [] };
+const RA = { kind: "both", order: "shuffle", range: "all" };
+function allPool() {
+  const maxDay = Math.max.apply(null, ALL.map(dayOf));
+  let items = RA.kind === "words" ? DATA.words : RA.kind === "sentences" ? DATA.sentences : ALL;
+  const r = RA.range;
+  if (r === "recent3") items = items.filter(x => dayOf(x) >= maxDay - 2);
+  else if (r === "marks") items = items.filter(x => marks.has(x[0]));
+  else if (r.indexOf("day:") === 0) items = items.filter(x => dayOf(x) === Number(r.slice(4)));
+  return items;
+}
+function updateAllInfo() {
+  const p = allPool(), w = p.filter(x => !isSent(x)).length;
+  $("rvAllInfo").textContent = p.length + "件(単語 " + w + " / 文 " + (p.length - w) + ")";
+  $("rvAllStart").disabled = !p.length;
+}
+function openAllSetup() {
+  const sel = $("rvRange"), keep = RA.range, maxDay = Math.max.apply(null, ALL.map(dayOf));
+  sel.textContent = "";
+  const opts = [["all", "全部"], ["recent3", "直近3日"], ["marks", "★苦手だけ"]];
+  for (let d = maxDay; d >= 1; d--) opts.push(["day:" + d, "Day " + d + " のみ"]);
+  opts.forEach(p => { const o = document.createElement("option"); o.value = p[0]; o.textContent = p[1]; sel.appendChild(o); });
+  sel.value = keep; if (sel.value !== keep) { sel.value = "all"; RA.range = "all"; }
+  rv.setup = true; updateAllInfo(); renderReview(false);
+}
+function startAll(items, order) {
+  const q = items.slice();
+  if (order === "shuffle") shuffle(q);
+  else q.sort((a, b) => (order === "new" ? dayOf(b) - dayOf(a) : dayOf(a) - dayOf(b)));
+  rv.queue = q; rv.total = q.length; rv.rest = 0; rv.i = 0; rv.revealed = false; rv.missed = []; rv.setup = false;
+  renderReview(true);
+}
+function startReview() {
+  [].slice.call($("rvMode").children).forEach(c => c.setAttribute("aria-pressed", String(c.dataset.v === rv.mode)));
+  if (rv.mode === "all") { openAllSetup(); return; }
+  rv.setup = false;
+  const due = dueList(currentDay());
+  rv.queue = shuffle(due.slice(0, CAP)); rv.total = rv.queue.length; rv.rest = due.length - rv.total;
+  rv.i = 0; rv.revealed = false; renderReview(true);
+}
+function renderReview(say) {
+  const all = rv.mode === "all", finished = rv.i >= rv.queue.length;
+  $("rvAllSetup").hidden = !(all && rv.setup);
+  $("rvTitle").textContent = all ? "全部通し復習" : "今日の復習";
+  $("rvSub").textContent = all ? (rv.setup ? "期限に関係なく通しで" : "全" + rv.total + "件") : "1回40件まで";
+  if (all && rv.setup) {
+    ["rvCard", "rvAgain", "rvShow", "rvGrade", "rvDone", "rvMore", "rvBack"].forEach(id => { $(id).hidden = true; });
+    return;
+  }
+  $("rvCard").hidden = finished; $("rvAgain").hidden = finished;
+  $("rvShow").hidden = finished || rv.revealed; $("rvGrade").hidden = finished || !rv.revealed;
+  $("rvDone").hidden = !finished;
+  $("rvMore").hidden = !(finished && (all ? rv.missed.length > 0 : rv.rest > 0));
+  $("rvMore").textContent = all ? "まだのものだけもう一回(" + rv.missed.length + "件)" : "残りを続ける";
+  $("rvBack").hidden = !(finished && all);
+  if (finished && all) {
+    $("rvDone").textContent = rv.total + "件を通して復習した。" + (rv.missed.length
+      ? "まだは" + rv.missed.length + "件。★苦手に入れたので、明日の復習にも出る。"
+      : "全部覚えてた。");
+    updateDue(); return;
+  }
+  if (finished) {
+    $("rvDone").textContent = rv.total === 0
+      ? "今日の復習は終わり。新しい分を覚えよう。"
+      : "今日の" + rv.total + "件が終わり。" + (rv.rest > 0 ? "あと" + rv.rest + "件残ってる。" : "復習はこれで全部。");
+    updateDue(); return;
+  }
+  const it = rv.queue[rv.i];
+  $("rvPos").textContent = (rv.i + 1) + " / " + rv.total;
+  $("rvTag").textContent = "Day " + (it[2] || 1) + (DATA.sentences.indexOf(it) >= 0 ? " 文" : " 単語");
+  const rev = rv.dir === "jp2vi";
+  $("rvVi").textContent = it[0]; $("rvVi").classList.toggle("hidden", !rv.revealed);
+  if (rv.etyKey !== it[0]) { rv.etyKey = it[0]; rv.etyOpen = false; }
+  paintEty($("rvEty"), $("rvEtyD"), it[0], rv.revealed, rv.etyOpen);
+  $("rvJp").textContent = it[1]; $("rvJp").classList.toggle("hidden", rev ? false : !rv.revealed);
+  $("rvAgain").hidden = rev && !rv.revealed;
+  if (say && !rev) speak(it[0]);
+}
+function grade(ok) {
+  const it = rv.queue[rv.i], day = currentDay(), r = recOf(it);
+  if (rv.mode === "all") {
+    if (!ok) { markWrong(it); rv.missed.push(it); }
+    rv.i++; rv.revealed = false; renderReview(true); return;
+  }
+  if (ok) { const s = r.s + 1; srs[it[0]] = { s: s, d: day + (s < GAPS.length ? GAPS[s] : 30) }; }
+  else srs[it[0]] = { s: 0, d: day + 1 };
+  saveSrs(); rv.i++; rv.revealed = false; renderReview(true);
+}
+["ety", "etyD"].forEach(id => $(id).addEventListener("click", () => { state.etyOpen = !state.etyOpen; render(); }));
+["rvEty", "rvEtyD"].forEach(id => $(id).addEventListener("click", () => { rv.etyOpen = !rv.etyOpen; renderReview(false); }));
+$("rvShow").addEventListener("click", () => { rv.revealed = true; renderReview(false); if (rv.dir === "jp2vi" && rv.i < rv.queue.length) speak(rv.queue[rv.i][0]); });
+$("rvDir").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  rv.dir = b.dataset.v;
+  [].slice.call($("rvDir").children).forEach(c => c.setAttribute("aria-pressed", String(c === b)));
+  rv.revealed = false; renderReview(rv.dir === "vi2jp");
+});
+$("rvAgain").addEventListener("click", () => { if (rv.i < rv.queue.length) speak(rv.queue[rv.i][0]); });
+$("rvYes").addEventListener("click", () => grade(true));
+$("rvNo").addEventListener("click", () => grade(false));
+$("rvMore").addEventListener("click", () => { if (rv.mode === "all") startAll(rv.missed.slice(), "shuffle"); else startReview(); });
+$("rvBack").addEventListener("click", openAllSetup);
+$("rvMode").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  rv.mode = b.dataset.v; startReview();
+});
+[["rvKind", "kind"], ["rvOrder", "order"]].forEach(p => $(p[0]).addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  RA[p[1]] = b.dataset.v;
+  [].slice.call($(p[0]).children).forEach(c => c.setAttribute("aria-pressed", String(c === b)));
+  updateAllInfo();
+}));
+$("rvRange").addEventListener("change", e => { RA.range = e.target.value; updateAllInfo(); });
+$("rvAllStart").addEventListener("click", () => { const p = allPool(); if (p.length) startAll(p, RA.order); });
+function showView(v) {
+  stop(); render();
+  $("learnView").hidden = v !== "learn";
+  $("reviewView").hidden = v !== "review";
+  $("testView").hidden = v !== "test";
+  $("readView").hidden = v !== "read";
+  [["viewLearn", "learn"], ["viewReview", "review"], ["viewTest", "test"], ["viewRead", "read"]].forEach(p => $(p[0]).setAttribute("aria-pressed", String(v === p[1])));
+  if (v === "review") startReview();
+  if (v === "test") openTestSetup();
+  if (v === "read") openReadList();
+}
+$("viewLearn").addEventListener("click", () => showView("learn"));
+$("viewReview").addEventListener("click", () => showView("review"));
+$("viewTest").addEventListener("click", () => showView("test"));
+$("viewRead").addEventListener("click", () => showView("read"));
+
+/* Reading: short emails and minutes built from what has been learned. */
+const READ = [
+ {
+  "id": "p1",
+  "title": "見積もりメールの返信",
+  "day": 3,
+  "lines": [
+   [
+    "Kính gửi anh Tanaka,",
+    "田中様"
+   ],
+   [
+    "Cảm ơn anh đã gửi hồ sơ sản phẩm cho bên em ạ.",
+    "製品の資料をお送りいただきありがとうございます"
+   ],
+   [
+    "Em đã kiểm tra thông số kỹ thuật và gửi báo giá đính kèm trong email này ạ.",
+    "仕様を確認し、見積書をこのメールに添付しました"
+   ],
+   [
+    "Chi phí thử nghiệm là hai triệu đồng một mẫu, chưa bao gồm thuế VAT ạ.",
+    "試験費用は1サンプル200万ドンで、VATは含まれていません"
+   ],
+   [
+    "Thời gian thử nghiệm khoảng hai tuần, sau đó kết quả sẽ có trong một tuần ạ.",
+    "試験期間は約2週間で、その後1週間で結果が出ます"
+   ],
+   [
+    "Nếu anh cần nhanh thì em có thể ưu tiên ạ.",
+    "お急ぎなら優先して対応できます"
+   ],
+   [
+    "Anh xác nhận giùm em trước ngày mai nghen.",
+    "明日までに確認をお願いしますね"
+   ],
+   [
+    "Em cảm ơn anh ạ.",
+    "ありがとうございます"
+   ]
+  ],
+  "qs": [
+   {
+    "q": "試験費用はいくら?",
+    "c": [
+     "1サンプル200万ドン、VAT別",
+     "1サンプル200万ドン、VAT込み",
+     "1サンプル20万ドン、VAT別",
+     "合計で200万ドン、VAT込み"
+    ]
+   },
+   {
+    "q": "試験が始まってから結果が出るまでは?",
+    "c": [
+     "試験約2週間、その後さらに1週間",
+     "試験約1週間、その後すぐ結果",
+     "試験約2週間、その日のうちに結果",
+     "試験約1週間、その後2週間"
+    ]
+   },
+   {
+    "q": "田中さんにお願いしていることは?",
+    "c": [
+     "明日までに確認すること",
+     "今日中に支払うこと",
+     "来週サンプルを送ること",
+     "電話をかけてくること"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "p2",
+  "title": "認証の進捗報告",
+  "day": 7,
+  "lines": [
+   [
+    "Hiện tại bên em đang ở giai đoạn thử nghiệm ạ.",
+    "現在は試験の段階です"
+   ],
+   [
+    "Mẫu thử đã được vận chuyển, nhưng đang ở hải quan nên chưa đến phòng thí nghiệm ạ.",
+    "試験用サンプルは輸送済みですが、税関にあるのでまだラボに届いていません"
+   ],
+   [
+    "Hồ sơ còn thiếu mã sản phẩm, anh gửi bổ sung giùm em nghen.",
+    "書類に製品コードが足りないので、追加で送ってくださいね"
+   ],
+   [
+    "Sau khi có kết quả, em sẽ nộp hồ sơ cho cơ quan quản lý ạ.",
+    "結果が出たら、規制当局に書類を提出します"
+   ],
+   [
+    "Giấy chứng nhận sẽ có hiệu lực trong ba năm ạ.",
+    "証明書の有効期間は3年です"
+   ],
+   [
+    "Tiến độ dự án đang đúng kế hoạch ạ.",
+    "プロジェクトの進捗は計画通りです"
+   ]
+  ],
+  "qs": [
+   {
+    "q": "サンプルは今どうなっている?",
+    "c": [
+     "税関にあって、まだラボに届いていない",
+     "ラボで試験中",
+     "まだ発送されていない",
+     "試験が終わった"
+    ]
+   },
+   {
+    "q": "お客さんに追加で求めているものは?",
+    "c": [
+     "製品コード",
+     "見積書",
+     "サンプル2個",
+     "契約書"
+    ]
+   },
+   {
+    "q": "証明書の有効期間は?",
+    "c": [
+     "3年",
+     "1年",
+     "2年",
+     "30日"
+    ]
+   },
+   {
+    "q": "全体の進み具合は?",
+    "c": [
+     "計画通り",
+     "遅れている",
+     "計画より早い",
+     "まだ始まっていない"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "p3",
+  "title": "会議の議事録",
+  "day": 8,
+  "lines": [
+   [
+    "Biên bản cuộc họp",
+    "議事録"
+   ],
+   [
+    "Cuộc họp bắt đầu lúc chín giờ sáng.",
+    "会議は朝9時に始まった"
+   ],
+   [
+    "Hai bên thảo luận về kế hoạch tháng sau và ngân sách của dự án.",
+    "双方で来月の計画とプロジェクトの予算について話し合った"
+   ],
+   [
+    "Phía khách hàng muốn giảm giá nếu đặt từ năm bộ trở lên.",
+    "顧客側は、5セット以上の注文なら値引きを希望した"
+   ],
+   [
+    "Bên em đồng ý giảm giá, nhưng thời gian giao hàng sẽ lâu hơn một chút.",
+    "当社は値引きに同意したが、納期は少し長くなる"
+   ],
+   [
+    "Hai bên sẽ thương lượng điều kiện và ký thỏa thuận vào tuần sau.",
+    "双方は来週、条件を交渉して合意書に署名する予定"
+   ],
+   [
+    "Người phụ trách bên em sẽ gửi biên bản cuộc họp trước ngày mai.",
+    "当社の担当者が明日までに議事録を送る"
+   ]
+  ],
+  "qs": [
+   {
+    "q": "会議は何時に始まった?",
+    "c": [
+     "朝9時",
+     "朝6時",
+     "午後1時",
+     "夜9時"
+    ]
+   },
+   {
+    "q": "顧客の希望は?",
+    "c": [
+     "5セット以上の注文で値引き",
+     "納期を早めること",
+     "試験の項目を増やすこと",
+     "支払いを後にすること"
+    ]
+   },
+   {
+    "q": "値引きに同意した代わりに、どうなる?",
+    "c": [
+     "納期が少し長くなる",
+     "費用が上がる",
+     "数量が減る",
+     "会議が増える"
+    ]
+   },
+   {
+    "q": "来週やる予定のことは?",
+    "c": [
+     "条件の交渉と合意書への署名",
+     "サンプルの発送",
+     "証明書の提出",
+     "会議の延期"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "p4",
+  "title": "遅れのお詫びメール",
+  "day": 8,
+  "lines": [
+   [
+    "Kính gửi chị Lan,",
+    "ランさん"
+   ],
+   [
+    "Em xin lỗi vì kết quả thử nghiệm bị trễ ạ.",
+    "試験結果が遅れてしまい申し訳ありません"
+   ],
+   [
+    "Vì máy đo đang hiệu chuẩn nên bên em chưa hoàn thành báo cáo ạ.",
+    "測定器を校正中のため、まだ報告書が完成していません"
+   ],
+   [
+    "Em dự kiến gửi báo cáo vào chiều mai ạ.",
+    "報告書は明日の午後に送る予定です"
+   ],
+   [
+    "Nếu có thay đổi, em sẽ báo lại cho chị sớm ạ.",
+    "変更があれば、早めにご連絡します"
+   ],
+   [
+    "Cảm ơn chị đã chờ ạ.",
+    "お待ちいただきありがとうございます"
+   ]
+  ],
+  "qs": [
+   {
+    "q": "遅れている理由は?",
+    "c": [
+     "測定器を校正している",
+     "サンプルが足りない",
+     "担当者が休み",
+     "税関で止まっている"
+    ]
+   },
+   {
+    "q": "報告書はいつ送る予定?",
+    "c": [
+     "明日の午後",
+     "今日の午後",
+     "来週",
+     "明日の朝"
+    ]
+   },
+   {
+    "q": "変更があった場合は?",
+    "c": [
+     "早めに連絡する",
+     "何もしない",
+     "電話で謝る",
+     "報告書を取り消す"
+    ]
+   }
+  ]
+ }
+];
+let readDone = {};
+try { readDone = JSON.parse(localStorage.getItem("nghe-noi-read") || "{}") || {}; } catch (e) { readDone = {}; }
+const RD = { p: null, jp: false };
+function openReadList() {
+  stop();
+  $("rdList").hidden = false; $("rdPage").hidden = true;
+  const box = $("rdItems"); box.textContent = "";
+  READ.forEach((p, i) => {
+    const b = document.createElement("button"); b.className = "row";
+    const n = document.createElement("span"); n.className = "n"; n.textContent = i + 1;
+    const w = document.createElement("span");
+    const v = document.createElement("span"); v.className = "v"; v.textContent = p.title;
+    const j = document.createElement("div"); j.className = "j";
+    const d = readDone[p.id];
+    j.textContent = "Day " + p.day + " まで・" + p.lines.length + "行・問題" + p.qs.length + (d != null ? "・最高 " + d + "/" + p.qs.length : "");
+    w.appendChild(v); w.appendChild(j); b.appendChild(n); b.appendChild(w);
+    b.addEventListener("click", () => openPassage(p));
+    box.appendChild(b);
+  });
+}
+function openPassage(p) {
+  RD.p = p; RD.jp = false;
+  $("rdList").hidden = true; $("rdPage").hidden = false;
+  $("rdTitle").textContent = p.title; $("rdMeta").textContent = "Day " + p.day + " まで";
+  $("rdJpBtn").textContent = "訳を見る"; $("rdScore").hidden = true;
+  const box = $("rdLines"); box.textContent = "";
+  p.lines.forEach((l, i) => {
+    const b = document.createElement("button"); b.className = "row";
+    const n = document.createElement("span"); n.className = "n"; n.textContent = i + 1;
+    const w = document.createElement("span");
+    const v = document.createElement("span"); v.className = "v"; v.textContent = l[0];
+    const j = document.createElement("div"); j.className = "j"; j.textContent = l[1]; j.hidden = true;
+    w.appendChild(v); w.appendChild(j); b.appendChild(n); b.appendChild(w);
+    b.addEventListener("click", () => speak(l[0]));
+    box.appendChild(b);
+  });
+  const qb = $("rdQs"); qb.textContent = "";
+  let done = 0, score = 0;
+  p.qs.forEach((q, qi) => {
+    const wrap = document.createElement("div"); wrap.className = "view";
+    const t = document.createElement("div"); t.className = "jp"; t.textContent = (qi + 1) + ". " + q.q;
+    const ch = document.createElement("div"); ch.className = "choices";
+    shuffle(q.c.slice()).forEach(txt => {
+      const b = document.createElement("button"); b.className = "choice jpc"; b.textContent = txt;
+      b.addEventListener("click", () => {
+        if (wrap.dataset.done) return; wrap.dataset.done = "1";
+        const ok = txt === q.c[0]; if (ok) score++; done++;
+        [].slice.call(ch.children).forEach(c => { c.disabled = true; if (c.textContent === q.c[0]) c.classList.add("ok"); else if (c === b) c.classList.add("ng"); });
+        if (done === p.qs.length) {
+          const sc = $("rdScore"); sc.hidden = false;
+          sc.textContent = p.qs.length + "問中 " + score + " 問正解。" + (score === p.qs.length ? "全部読めた。" : "間違えた所は、もう一度読み直してみよう。");
+          if (readDone[p.id] == null || score > readDone[p.id]) { readDone[p.id] = score; try { localStorage.setItem("nghe-noi-read", JSON.stringify(readDone)); } catch (e) {} }
+        }
+      });
+      ch.appendChild(b);
+    });
+    wrap.appendChild(t); wrap.appendChild(ch); qb.appendChild(wrap);
+  });
+}
+$("rdAll").addEventListener("click", () => { if (RD.p) speak(RD.p.lines.map(l => l[0]).join(" ")); });
+$("rdJpBtn").addEventListener("click", () => {
+  RD.jp = !RD.jp; $("rdJpBtn").textContent = RD.jp ? "訳を隠す" : "訳を見る";
+  [].slice.call($("rdLines").querySelectorAll(".j")).forEach(e => { e.hidden = !RD.jp; });
+});
+$("rdBack").addEventListener("click", openReadList);
+
+/* Test: multiple-choice questions over everything learned so far. */
+const STOP = ["ạ", "em", "anh", "chị", "dạ", "nghen", "hông", "nha", "ơi"];
+const T = { kind: "both", type: "mix", count: 10, range: "all", qs: [], i: 0, score: 0, miss: [], answered: false, retry: false };
+let hist = [];
+try { hist = JSON.parse(localStorage.getItem("nghe-noi-hist") || "[]") || []; } catch (e) { hist = []; }
+function saveHist() { try { localStorage.setItem("nghe-noi-hist", JSON.stringify(hist)); } catch (e) {} }
+const dayOf = x => x[2] || 1;
+const isSent = it => DATA.sentences.indexOf(it) >= 0;
+function pickDistinct(pool, key, avoid, n) {
+  const out = [], seen = new Set([avoid]);
+  for (const x of pool) { const k = key(x); if (!seen.has(k)) { seen.add(k); out.push(x); if (out.length >= n) break; } }
+  return out;
+}
+const clozeCore = t => t.replace(/[.,?!]+$/, "");
+function clozeCands(it) {
+  const out = [];
+  it[0].split(" ").forEach((t, i) => {
+    const c = clozeCore(t);
+    if (i > 0 && c.length >= 2 && c === c.toLowerCase() && STOP.indexOf(c) < 0 && !/\d/.test(c)) out.push(i);
+  });
+  return out;
+}
+let VOCAB = null;
+function vocab() {
+  if (!VOCAB) {
+    const cnt = {};
+    DATA.sentences.forEach(it => it[0].split(" ").forEach(t => {
+      const c = clozeCore(t);
+      if (c.length >= 2 && c === c.toLowerCase() && STOP.indexOf(c) < 0 && !/\d/.test(c)) cnt[c] = (cnt[c] || 0) + 1;
+    }));
+    const all = Object.keys(cnt), common = all.filter(w => cnt[w] >= 3);
+    VOCAB = common.length >= 12 ? common : all;
+  }
+  return VOCAB;
+}
+function makeQ(it, type) {
+  const same = isSent(it) ? DATA.sentences : DATA.words;
+  const others = shuffle(same.filter(x => x !== it));
+  let q = null;
+  if (type === "cloze") {
+    const cands = clozeCands(it);
+    if (cands.length) {
+      const toks = it[0].split(" "), i = cands[Math.floor(Math.random() * cands.length)];
+      const ans = clozeCore(toks[i]), tail = toks[i].slice(ans.length);
+      const wrong = shuffle(vocab().filter(w => w !== ans)).slice(0, 3);
+      const shown = toks.map((t, j) => j === i ? "＿＿＿" + tail : t).join(" ");
+      q = { type: "cloze", it: it, prompt: shown, hint: it[1], choices: shuffle([ans].concat(wrong)), answer: ans, lang: "vi" };
+    }
+  }
+  if (!q && type === "listen") {
+    const w = pickDistinct(others, x => x[1], it[1], 3).map(x => x[1]);
+    q = { type: "listen", it: it, prompt: "音声を聞いて、意味を選ぶ", hint: "", choices: shuffle([it[1]].concat(w)), answer: it[1], lang: "jp" };
+  }
+  if (!q) {
+    const w = pickDistinct(others, x => x[0], it[0], 3).map(x => x[0]);
+    q = { type: "jp2vi", it: it, prompt: it[1], hint: "", choices: shuffle([it[0]].concat(w)), answer: it[0], lang: "vi" };
+  }
+  return q;
+}
+function pickType(it) {
+  if (T.type !== "mix") return T.type;
+  const opts = ["listen", "jp2vi"];
+  if (isSent(it)) opts.push("cloze");
+  return opts[Math.floor(Math.random() * opts.length)];
+}
+function testPool() {
+  const maxDay = Math.max.apply(null, ALL.map(dayOf));
+  let items = T.type === "cloze" ? DATA.sentences : T.kind === "words" ? DATA.words : T.kind === "sentences" ? DATA.sentences : ALL;
+  const r = T.range;
+  if (r === "recent3") items = items.filter(x => dayOf(x) >= maxDay - 2);
+  else if (r === "marks") items = items.filter(x => marks.has(x[0]));
+  else if (r === "due") { const due = new Set(dueList(currentDay()).map(x => x[0])); items = items.filter(x => due.has(x[0])); }
+  else if (r.indexOf("day:") === 0) items = items.filter(x => dayOf(x) === Number(r.slice(4)));
+  return items;
+}
+function renderHist() {
+  const box = $("tHist"); box.textContent = "";
+  const rows = hist.slice(0, 5);
+  $("tHistTitle").hidden = box.hidden = !rows.length;
+  rows.forEach(h => {
+    const d = new Date(h.t), row = document.createElement("div");
+    row.className = "hrow";
+    const a = document.createElement("span"), b = document.createElement("span");
+    a.textContent = (d.getMonth() + 1) + "/" + d.getDate() + "  Day " + h.day;
+    b.textContent = h.s + " / " + h.n + "(" + Math.round(h.s / h.n * 100) + "%)";
+    row.appendChild(a); row.appendChild(b); box.appendChild(row);
+  });
+}
+function openTestSetup() {
+  $("tSetup").hidden = false; $("tQuiz").hidden = true; $("tResult").hidden = true; $("tMsg").hidden = true;
+  const sel = $("tRange"), keep = T.range, maxDay = Math.max.apply(null, ALL.map(dayOf));
+  sel.textContent = "";
+  const opts = [["all", "全部"], ["recent3", "直近3日"], ["due", "今日の復習が必要なもの"], ["marks", "★苦手だけ"]];
+  for (let d = maxDay; d >= 1; d--) opts.push(["day:" + d, "Day " + d + " のみ"]);
+  opts.forEach(p => { const o = document.createElement("option"); o.value = p[0]; o.textContent = p[1]; sel.appendChild(o); });
+  sel.value = keep;
+  if (sel.value !== keep) { sel.value = "all"; T.range = "all"; }
+  renderHist();
+}
+function startTest() {
+  const pool = testPool();
+  if (!pool.length) { $("tMsg").hidden = false; $("tMsg").textContent = "この条件に当てはまるものがない。範囲を変えてみて。"; return; }
+  $("tMsg").hidden = true; T.retry = false;
+  T.qs = shuffle(pool.slice()).slice(0, T.count).map(it => makeQ(it, pickType(it)));
+  beginQuiz();
+}
+function beginQuiz() {
+  T.i = 0; T.score = 0; T.miss = [];
+  $("tSetup").hidden = true; $("tResult").hidden = true; $("tQuiz").hidden = false;
+  renderQ();
+}
+function renderQ() {
+  const q = T.qs[T.i]; T.answered = false;
+  $("tProg").textContent = (T.i + 1) + " / " + T.qs.length;
+  $("tScore").textContent = "正解 " + T.score;
+  $("tBar").style.width = (T.i / T.qs.length * 100) + "%";
+  $("tTypeLbl").textContent = q.type === "listen" ? "聞き取り" : q.type === "cloze" ? "穴埋め" : "日本語 → ベトナム語";
+  $("tQ").textContent = q.prompt;
+  $("tQ").className = "vi" + (q.type === "cloze" ? "" : " jpq");
+  $("tSub").textContent = q.hint;
+  $("tListen").hidden = q.type !== "listen";
+  $("tFeed").hidden = true; $("tNext").hidden = true;
+  const box = $("tChoices"); box.textContent = "";
+  q.choices.forEach((c, k) => {
+    const b = document.createElement("button");
+    b.className = "choice" + (q.lang === "jp" ? " jpc" : "");
+    b.textContent = c;
+    b.addEventListener("click", () => answerQ(k));
+    box.appendChild(b);
+  });
+  if (q.type === "listen") speak(q.it[0]);
+}
+function markWrong(it) {
+  marks.add(it[0]); saveMarks();
+  srs[it[0]] = { s: 0, d: currentDay() + 1 }; saveSrs();
+  updateDue();
+}
+function answerQ(k) {
+  if (T.answered) return;
+  T.answered = true;
+  const q = T.qs[T.i], ok = q.choices[k] === q.answer;
+  [].slice.call($("tChoices").children).forEach((b, j) => {
+    b.disabled = true;
+    if (q.choices[j] === q.answer) b.classList.add("ok"); else if (j === k) b.classList.add("ng");
+  });
+  if (ok) T.score++; else { T.miss.push(q.it); markWrong(q.it); }
+  $("tScore").textContent = "正解 " + T.score;
+  $("tFeed").hidden = false;
+  $("tFeed").textContent = (ok ? "正解!" : "不正解") + "\n" + q.it[0] + "\n" + q.it[1];
+  $("tListen").hidden = false;
+  $("tNext").hidden = false;
+  $("tNext").textContent = T.i + 1 >= T.qs.length ? "結果を見る" : "次へ";
+  speak(q.it[0]);
+}
+function finishTest() {
+  try { speechSynthesis.cancel(); } catch (e) {}
+  $("tQuiz").hidden = true; $("tResult").hidden = false;
+  const n = T.qs.length, pct = Math.round(T.score / n * 100);
+  $("tSum").textContent = n + "問中 " + T.score + "問正解(" + pct + "%)" + (T.miss.length ? "\n間違えた" + T.miss.length + "個は ★苦手 に入れた。明日の復習にも出る。" : "\n全問正解。");
+  const box = $("tMiss"); box.textContent = "";
+  T.miss.forEach(x => {
+    const b = document.createElement("button");
+    b.className = "row";
+    b.innerHTML = '<span class="n">✗</span><span><div class="v"></div><div class="j"></div></span>';
+    b.querySelector(".v").textContent = x[0];
+    b.querySelector(".j").textContent = x[1];
+    b.addEventListener("click", () => speak(x[0]));
+    box.appendChild(b);
+  });
+  $("tMissTitle").hidden = $("tMiss").hidden = $("tRetry").hidden = !T.miss.length;
+  if (!T.retry) { hist.unshift({ t: Date.now(), day: currentDay(), s: T.score, n: n }); hist = hist.slice(0, 10); saveHist(); }
+}
+function segT(id, key, num) {
+  $(id).addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    T[key] = num ? Number(b.dataset.v) : b.dataset.v;
+    [].slice.call($(id).children).forEach(c => c.setAttribute("aria-pressed", c === b ? "true" : "false"));
+  });
+}
+segT("tKind", "kind"); segT("tType", "type"); segT("tCount", "count", true);
+$("tRange").addEventListener("change", e => { T.range = e.target.value; });
+$("tStart").addEventListener("click", startTest);
+$("tNext").addEventListener("click", () => { T.i++; if (T.i >= T.qs.length) finishTest(); else renderQ(); });
+$("tListen").addEventListener("click", () => { if (T.qs[T.i]) speak(T.qs[T.i].it[0]); });
+$("tRetry").addEventListener("click", () => {
+  const items = T.miss.slice(); T.retry = true;
+  T.qs = shuffle(items).map(it => makeQ(it, pickType(it)));
+  beginQuiz();
+});
+$("tBack").addEventListener("click", openTestSetup);
+
+/* Backup: move marks, review schedule and scores between apps or devices. */
+const BK_KEYS = ["nghe-noi-marks", "nghe-noi-srs", "nghe-noi-hist", "nghe-noi-read"];
+$("bkOut").addEventListener("click", async () => {
+  const o = { v: 1 };
+  BK_KEYS.forEach(k => { try { o[k] = localStorage.getItem(k); } catch (e) {} });
+  const txt = "NGHENOI1:" + btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+  $("bkTxt").value = txt;
+  let ok = false;
+  try { await navigator.clipboard.writeText(txt); ok = true; } catch (e) {}
+  if (!ok) { $("bkTxt").focus(); $("bkTxt").select(); }
+  $("bkMsg").textContent = ok ? "コピーした。移す先のアプリで貼り付けて「読み込む」を押して。" : "自動でコピーできなかった。上のコードを全部選んでコピーして。";
+});
+$("bkIn").addEventListener("click", () => {
+  try {
+    const t = $("bkTxt").value.trim().replace(/^NGHENOI1:/, "");
+    const o = JSON.parse(decodeURIComponent(escape(atob(t))));
+    if (!o || o.v !== 1) throw new Error("bad");
+    BK_KEYS.forEach(k => { if (o[k] != null) localStorage.setItem(k, o[k]); });
+    try { marks = new Set(JSON.parse(o["nghe-noi-marks"] || "[]")); } catch (e) {}
+    try { srs = JSON.parse(o["nghe-noi-srs"] || "{}") || {}; } catch (e) {}
+    try { hist = JSON.parse(o["nghe-noi-hist"] || "[]") || []; } catch (e) {}
+    try { readDone = JSON.parse(o["nghe-noi-read"] || "{}") || {}; } catch (e) {}
+    render(); updateDue();
+    $("bkMsg").textContent = "読み込んだ。★ " + marks.size + "件、復習の記録 " + Object.keys(srs).length + "件。";
+  } catch (e) { $("bkMsg").textContent = "読み込めなかった。コードを最初から最後まで全部貼り付けたか確認して。"; }
+});
+
+renderPlan();
+updateDue();
+render();
+</script>
+<script>
+if ("serviceWorker" in navigator) { window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); }); }
+</script>
+</body>
+</html>
