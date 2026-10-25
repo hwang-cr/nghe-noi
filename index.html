@@ -65,7 +65,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .jp.hidden { visibility: hidden; }
 .ety { border: 0; background: transparent; text-align: left; padding: 0; color: var(--muted); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
 .etyd { border: 0; background: var(--surface-2); text-align: left; padding: 10px 12px; border-radius: 10px; color: var(--fg); font-family: var(--font-jp); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
-#bk summary { cursor: pointer; font-weight: 700; }
+[hidden] { display: none !important; }
+details.fold > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-weight: 700; font-size: 15px; min-height: 48px; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::after { content: "▾"; color: var(--muted); font-weight: 400; }
+details.fold[open] > summary::after { content: "▴"; }
+details.fold[open] > summary { margin-bottom: 10px; }
+.sum-side { margin-left: auto; color: var(--muted); font-weight: 500; font-size: 13px; }
+#viewSeg { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; border-radius: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 6px max(8px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)); }
+#viewSeg button { min-height: 50px; font-size: 14px; border-radius: 10px; white-space: nowrap; padding: 6px 4px; }
+#viewSeg button[aria-pressed="true"] { background: var(--surface-2); color: var(--accent); }
+main { padding-bottom: 84px; }
 #bkTxt { width: 100%; font-size: 16px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); font-family: ui-monospace, monospace; resize: vertical; }
 .star { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 5px 12px; min-height: 34px; color: var(--muted); font-size: 13px; }
 .star[aria-pressed="true"] { color: var(--mark); border-color: var(--mark); font-weight: 700; }
@@ -135,19 +145,22 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
     <small>南部発音・仕事ベトナム語</small>
   </div>
 
+  <details class="fold">
+  <summary><strong id="planDay"></strong><span class="sum-side" id="planSum"></span></summary>
   <section class="plan" aria-label="3ヶ月プラン">
-    <div class="plan-head"><strong id="planDay"></strong><span id="planPhase"></span></div>
+    <div class="plan-head"><span id="planPhase"></span></div>
     <div class="meter"><div class="lbl"><span>単語</span><span id="wTxt"></span></div><div class="bar"><i id="wBar"></i><u id="wTick"></u></div></div>
     <div class="meter"><div class="lbl"><span>文</span><span id="sTxt"></span></div><div class="bar"><i id="sBar"></i><u id="sTick"></u></div></div>
     <p class="hint">1日の目標は単語25+文10。赤い線が「今日までの目標」。</p>
   </section>
+  </details>
 
-  <div class="seg" role="group" aria-label="モード" id="viewSeg" style="align-self:flex-start">
+  <nav class="seg" role="group" aria-label="モード" id="viewSeg">
     <button id="viewLearn" aria-pressed="true">学習</button>
     <button id="viewReview" aria-pressed="false">復習</button>
     <button id="viewTest" aria-pressed="false">テスト</button>
     <button id="viewRead" aria-pressed="false">読解</button>
-  </div>
+  </nav>
 
   <div class="view" id="learnView">
   <div class="seg" role="group" aria-label="種類" id="modeSeg" style="align-self:flex-start">
@@ -171,6 +184,8 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
   </div>
   <button class="once" id="once">この1つをもう一回聞く</button>
 
+  <details class="fold">
+  <summary>再生の設定</summary>
   <div class="opts">
     <div class="opt"><label>スピード</label>
       <div class="seg" id="rateSeg"><button data-v="0.65">ゆっくり</button><button data-v="0.85" aria-pressed="true">普通</button><button data-v="1">速め</button></div></div>
@@ -187,24 +202,29 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
     <p class="warn" id="warn" hidden>この端末にベトナム語の音声が見つかりません。端末の設定で vi-VN の音声を追加してください。</p>
     <p class="hint">音声は端末の読み上げ機能なので、北部寄りの発音になることがあります。南部の音は GPT Voice や VTV9 で確認してな。</p>
   </div>
+  </details>
 
-  <h2 id="listTitle">一覧</h2>
+  <details class="fold">
+  <summary><span id="listTitle">一覧</span></summary>
   <div class="list" id="list"></div>
+  </details>
 
-  <details class="opts" id="bk">
+  <details class="fold" id="bk">
     <summary>記録の書き出し・読み込み</summary>
+    <div class="opts">
     <p class="hint">★苦手、復習の日程、テストと読解の成績を、別のアプリや端末に移すときに使う。単語と文の中身は移さなくても入ってる。</p>
     <button class="once" id="bkOut" style="border-style:solid">書き出す(コピー)</button>
     <textarea id="bkTxt" rows="4" placeholder="書き出したコードがここに出る。読み込むときは、ここに貼り付けて「読み込む」"></textarea>
     <button class="once" id="bkIn" style="border-style:solid">読み込む</button>
     <p class="hint" id="bkMsg" aria-live="polite"></p>
+    </div>
   </details>
   </div>
 
   <section class="view" id="reviewView" hidden aria-label="今日の復習">
     <div class="rv-head"><strong id="rvTitle"></strong><span id="rvSub"></span></div>
     <div class="seg" id="rvMode"><button data-v="due" aria-pressed="true">今日の復習</button><button data-v="all" aria-pressed="false">全部通し</button></div>
-    <div class="seg" id="rvDir" style="align-self:flex-start"><button data-v="vi2jp" aria-pressed="true">聞いて意味を思い出す</button><button data-v="jp2vi" aria-pressed="false">日本語→ベトナム語</button></div>
+    <div class="seg" id="rvDir" style="align-self:flex-start"><button data-v="vi2jp" aria-pressed="true">聞いて意味</button><button data-v="jp2vi" aria-pressed="false">日本語から言う</button></div>
     <div class="view" id="rvAllSetup" hidden>
       <div class="opts">
         <div class="opt"><label for="rvRange">範囲</label><select id="rvRange"></select></div>
@@ -714,8 +734,9 @@ function renderPlan() {
   const W_PER = 25, S_PER = 10, DAYS = 90;
   const day = Math.min(DAYS, currentDay());
   const phase = day <= 30 ? "1ヶ月目: 会議の基本と聞き返し" : day <= 60 ? "2ヶ月目: 見積・納期・認証の実務" : "3ヶ月目: 雑談・メール・交渉";
-  $("planDay").textContent = "3ヶ月プラン Day " + day + " / " + DAYS;
+  $("planDay").textContent = "Day " + day + " / " + DAYS;
   $("planPhase").textContent = phase;
+  $("planSum").textContent = "単語 " + DATA.words.length + "・文 " + DATA.sentences.length;
   const goals = [["w", DATA.words.length, W_PER], ["s", DATA.sentences.length, S_PER]];
   goals.forEach(([k, have, per]) => {
     const goal = per * DAYS, expected = per * day;
@@ -869,6 +890,7 @@ $("rvRange").addEventListener("change", e => { RA.range = e.target.value; update
 $("rvAllStart").addEventListener("click", () => { const p = allPool(); if (p.length) startAll(p, RA.order); });
 function showView(v) {
   stop(); render();
+  try { window.scrollTo(0, 0); } catch (e) {}
   $("learnView").hidden = v !== "learn";
   $("reviewView").hidden = v !== "review";
   $("testView").hidden = v !== "test";

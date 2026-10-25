@@ -1,5 +1,5 @@
 // Offline cache. Network-first for the page so daily updates arrive when online; cache as fallback.
-const CACHE = "nghe-noi-b2af55fed8";
+const CACHE = "nghe-noi-f1c7fb021e";
 const CORE = ["./", "index.html", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE))); });
 self.addEventListener("activate", e => {
