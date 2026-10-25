@@ -10,7 +10,7 @@ self.addEventListener("fetch", e => {
   if (req.method !== "GET") return;
   const isPage = req.mode === "navigate" || req.url.endsWith("/index.html");
   if (isPage) {
-    e.respondWith(fetch(req).then(r => { const c = r.clone(); caches.open(CACHE).then(x => x.put("index.html", c)); return r; })
+    e.respondWith(fetch(req, { cache: "no-store" }).then(r => { const c = r.clone(); caches.open(CACHE).then(x => x.put("index.html", c)); return r; })
       .catch(() => caches.match("index.html")));
     return;
   }
