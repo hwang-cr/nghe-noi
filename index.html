@@ -239,7 +239,7 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
     <div class="view" id="rvMenu" hidden>
       <div class="streak" id="rvStreak"></div>
       <div class="menu-grid" id="rvMenuList"></div>
-      <p class="hint">毎日、今日・昨日・3日前・7日前・14日前の分を1周ずつ回す。日付が変わると、出てくるDayも自動でずれる。カードを押すと、その日の単語と文をまとめて復習する。</p>
+      <p class="hint">朝は学習タブで新しい分を覚えてから、今日と昨日を1周。帰りは3日前・7日前・14日前を1周。日付が変わると、出てくるDayも自動でずれる。カードを押すと、その日の単語と文をまとめて復習する。</p>
       <details class="fold">
         <summary>周回の記録</summary>
         <div class="list" id="rvLog"></div>
@@ -908,10 +908,10 @@ function streak() {
   while (LOG.days[ymd(d)]) { n++; d.setDate(d.getDate() - 1); }
   return n;
 }
-const MENU = [[0, "今日"], [1, "昨日"], [3, "3日前"], [7, "7日前"], [14, "14日前"]];
+const MENU = [[0, "今日", "朝"], [1, "昨日", "朝"], [3, "3日前", "帰り"], [7, "7日前", "帰り"], [14, "14日前", "帰り"]];
 function menuItems() {
   const today = currentDay(), maxDay = Math.max.apply(null, ALL.map(dayOf)), seen = {};
-  return MENU.map(m => ({ off: m[0], label: m[1], day: Math.min(today, maxDay) - m[0] }))
+  return MENU.map(m => ({ off: m[0], label: m[1], slot: m[2], day: Math.min(today, maxDay) - m[0] }))
     .filter(m => m.day >= 1 && !seen[m.day] && (seen[m.day] = true));
 }
 function lapsOf(day) { return LOG.laps[String(day)] || []; }
@@ -919,7 +919,9 @@ function doneToday(day) { const l = lapsOf(day); return l.length > 0 && l[l.leng
 function openMenu() {
   rv.setup = true;
   const box = $("rvMenuList"); box.textContent = "";
+  let slot = "";
   menuItems().forEach(m => {
+    if (m.slot !== slot) { slot = m.slot; const h = document.createElement("h2"); h.textContent = slot === "朝" ? "朝 30分: 新しい分を学習 → 今日・昨日" : "帰り 30分: 3日前・7日前・14日前"; box.appendChild(h); }
     const items = ALL.filter(x => dayOf(x) === m.day), w = items.filter(x => !isSent(x)).length;
     const laps = lapsOf(m.day), last = laps[laps.length - 1], done = doneToday(m.day);
     const b = document.createElement("button"); b.className = "mcard" + (done ? " done" : "");
