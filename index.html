@@ -66,6 +66,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .ety { border: 0; background: transparent; text-align: left; padding: 0; color: var(--muted); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
 .etyd { border: 0; background: var(--surface-2); text-align: left; padding: 10px 12px; border-radius: 10px; color: var(--fg); font-family: var(--font-jp); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
 [hidden] { display: none !important; }
+.streak { display: flex; gap: 8px; flex-wrap: wrap; }
+.streak span { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 13px; }
+.streak b { color: var(--accent); }
+.menu-grid { display: grid; gap: 10px; }
+.mcard { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; text-align: left; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; min-height: 64px; color: var(--fg); }
+.mcard .t { font-weight: 700; font-size: 16px; }
+.mcard .t small { color: var(--muted); font-weight: 500; font-size: 13px; margin-left: 6px; }
+.mcard .st { font-size: 13px; font-weight: 700; color: var(--accent-fg); background: var(--accent); border-radius: 999px; padding: 5px 12px; grid-row: span 2; }
+.mcard .s { color: var(--muted); font-size: 13px; }
+.mcard.done { background: var(--surface-2); }
+.mcard.done .st { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
 details.fold > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-weight: 700; font-size: 15px; min-height: 48px; }
 details.fold > summary::-webkit-details-marker { display: none; }
 details.fold > summary::after { content: "▾"; color: var(--muted); font-weight: 400; }
@@ -212,7 +223,7 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
   <details class="fold" id="bk">
     <summary>記録の書き出し・読み込み</summary>
     <div class="opts">
-    <p class="hint">★苦手、復習の日程、テストと読解の成績を、別のアプリや端末に移すときに使う。単語と文の中身は移さなくても入ってる。</p>
+    <p class="hint">★苦手、復習の日程と周回の記録、テストと読解の成績を、別のアプリや端末に移すときに使う。単語と文の中身は移さなくても入ってる。</p>
     <button class="once" id="bkOut" style="border-style:solid">書き出す(コピー)</button>
     <textarea id="bkTxt" rows="4" placeholder="書き出したコードがここに出る。読み込むときは、ここに貼り付けて「読み込む」"></textarea>
     <button class="once" id="bkIn" style="border-style:solid">読み込む</button>
@@ -223,8 +234,17 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
 
   <section class="view" id="reviewView" hidden aria-label="今日の復習">
     <div class="rv-head"><strong id="rvTitle"></strong><span id="rvSub"></span></div>
-    <div class="seg" id="rvMode"><button data-v="due" aria-pressed="true">今日の復習</button><button data-v="all" aria-pressed="false">全部通し</button></div>
+    <div class="seg" id="rvMode"><button data-v="menu" aria-pressed="true">今日のメニュー</button><button data-v="all" aria-pressed="false">全部通し</button><button data-v="due" aria-pressed="false">自動</button></div>
     <div class="seg" id="rvDir" style="align-self:flex-start"><button data-v="vi2jp" aria-pressed="true">聞いて意味</button><button data-v="jp2vi" aria-pressed="false">日本語から言う</button></div>
+    <div class="view" id="rvMenu" hidden>
+      <div class="streak" id="rvStreak"></div>
+      <div class="menu-grid" id="rvMenuList"></div>
+      <p class="hint">毎日、今日・昨日・3日前・7日前・14日前の分を1周ずつ回す。日付が変わると、出てくるDayも自動でずれる。カードを押すと、その日の単語と文をまとめて復習する。</p>
+      <details class="fold">
+        <summary>周回の記録</summary>
+        <div class="list" id="rvLog"></div>
+      </details>
+    </div>
     <div class="view" id="rvAllSetup" hidden>
       <div class="opts">
         <div class="opt"><label for="rvRange">範囲</label><select id="rvRange"></select></div>
@@ -253,7 +273,7 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
     <p class="rv-done" id="rvDone" hidden></p>
     <button class="rv-show" id="rvMore" hidden>残りを続ける</button>
     <button class="once" id="rvBack" hidden>範囲を選び直す</button>
-    <p class="hint">耳で聞いて意味を思い出してから、答えを見る。「まだ」は明日また出る。「覚えた」は 1・3・7・14・30日後にまた出る。記録はこの端末のブラウザに残る。</p>
+    <p class="hint" id="rvHint"></p>
   </section>
 
   <section class="view" id="testView" hidden aria-label="テスト">
@@ -868,8 +888,73 @@ function shuffle(a) {
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a;
 }
-function updateDue() { $("viewReview").textContent = "復習 " + dueList(currentDay()).length; }
-const rv = { queue: [], i: 0, total: 0, rest: 0, revealed: false, mode: "due", dir: "vi2jp", setup: false, missed: [] };
+function updateDue() {
+  let left = 0;
+  try { left = menuItems().filter(m => !doneToday(m.day)).length; } catch (e) {}
+  $("viewReview").textContent = left ? "復習 " + left : "復習 ✓";
+}
+const rv = { queue: [], i: 0, total: 0, rest: 0, revealed: false, mode: "menu", dir: "vi2jp", setup: false, missed: [], ok: 0, session: null, logged: false };
+/* Lap log: how many times each Day has been reviewed, plus cards reviewed per date (for the streak). */
+let LOG = { laps: {}, days: {} };
+try { LOG = JSON.parse(localStorage.getItem("nghe-noi-log") || "null") || LOG; } catch (e) {}
+LOG.laps = LOG.laps || {}; LOG.days = LOG.days || {};
+function saveLog() { try { localStorage.setItem("nghe-noi-log", JSON.stringify(LOG)); } catch (e) {} }
+function ymd(d) { d = d || new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function md(t) { const p = t.split("-"); return Number(p[1]) + "/" + Number(p[2]); }
+function bumpDay() { const k = ymd(); LOG.days[k] = (LOG.days[k] || 0) + 1; saveLog(); }
+function streak() {
+  let n = 0; const d = new Date();
+  if (!LOG.days[ymd(d)]) d.setDate(d.getDate() - 1);
+  while (LOG.days[ymd(d)]) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+const MENU = [[0, "今日"], [1, "昨日"], [3, "3日前"], [7, "7日前"], [14, "14日前"]];
+function menuItems() {
+  const today = currentDay(), maxDay = Math.max.apply(null, ALL.map(dayOf)), seen = {};
+  return MENU.map(m => ({ off: m[0], label: m[1], day: Math.min(today, maxDay) - m[0] }))
+    .filter(m => m.day >= 1 && !seen[m.day] && (seen[m.day] = true));
+}
+function lapsOf(day) { return LOG.laps[String(day)] || []; }
+function doneToday(day) { const l = lapsOf(day); return l.length > 0 && l[l.length - 1].t === ymd(); }
+function openMenu() {
+  rv.setup = true;
+  const box = $("rvMenuList"); box.textContent = "";
+  menuItems().forEach(m => {
+    const items = ALL.filter(x => dayOf(x) === m.day), w = items.filter(x => !isSent(x)).length;
+    const laps = lapsOf(m.day), last = laps[laps.length - 1], done = doneToday(m.day);
+    const b = document.createElement("button"); b.className = "mcard" + (done ? " done" : "");
+    const t = document.createElement("span"); t.className = "t"; t.textContent = m.label;
+    const sm = document.createElement("small"); sm.textContent = "Day " + m.day; t.appendChild(sm);
+    const st = document.createElement("span"); st.className = "st"; st.textContent = done ? "✓ 済み" : (laps.length + 1) + "周目へ";
+    const sub = document.createElement("span"); sub.className = "s";
+    sub.textContent = "単語 " + w + "・文 " + (items.length - w) + (last ? "　|　" + laps.length + "周・前回 " + md(last.t) + " " + Math.round(last.ok / last.n * 100) + "%" : "　|　まだ0周");
+    b.appendChild(t); b.appendChild(st); b.appendChild(sub);
+    b.addEventListener("click", () => startAll(items, "shuffle", { key: String(m.day), label: m.label + "(Day " + m.day + ")" }));
+    box.appendChild(b);
+  });
+  const left = menuItems().filter(m => !doneToday(m.day)).length;
+  const totalLaps = Object.keys(LOG.laps).reduce((a, k) => a + LOG.laps[k].length, 0);
+  $("rvStreak").innerHTML = "";
+  [["連続", streak() + "日"], ["今日", (LOG.days[ymd()] || 0) + "枚"], ["残り", left + "セット"], ["合計", totalLaps + "周"]].forEach(p => {
+    const sp = document.createElement("span"); sp.textContent = p[0] + " "; const bb = document.createElement("b"); bb.textContent = p[1]; sp.appendChild(bb); $("rvStreak").appendChild(sp);
+  });
+  renderLog(); renderReview(false);
+}
+function renderLog() {
+  const box = $("rvLog"); box.textContent = "";
+  const maxDay = Math.max.apply(null, ALL.map(dayOf));
+  const rows = [];
+  if ((LOG.laps.all || []).length) rows.push(["全部通し", LOG.laps.all]);
+  for (let d = maxDay; d >= 1; d--) rows.push(["Day " + d, lapsOf(d)]);
+  rows.forEach(r => {
+    const row = document.createElement("div"); row.className = "hrow";
+    const a = document.createElement("span"); a.textContent = r[0];
+    const b = document.createElement("span"); const l = r[1], last = l[l.length - 1];
+    b.textContent = l.length ? l.length + "周・前回 " + md(last.t) + "・" + Math.round(last.ok / last.n * 100) + "%" : "0周";
+    if (!l.length) b.style.color = "var(--muted)";
+    row.appendChild(a); row.appendChild(b); box.appendChild(row);
+  });
+}
 const RA = { kind: "both", order: "shuffle", range: "all" };
 function allPool() {
   const maxDay = Math.max.apply(null, ALL.map(dayOf));
@@ -894,7 +979,9 @@ function openAllSetup() {
   sel.value = keep; if (sel.value !== keep) { sel.value = "all"; RA.range = "all"; }
   rv.setup = true; updateAllInfo(); renderReview(false);
 }
-function startAll(items, order) {
+function allSession() { return RA.range === "all" && RA.kind === "both" ? { key: "all", label: "全部" } : null; }
+function startAll(items, order, session) {
+  rv.session = session || null; rv.logged = false; rv.ok = 0;
   const q = items.slice();
   if (order === "shuffle") shuffle(q);
   else q.sort((a, b) => (order === "new" ? dayOf(b) - dayOf(a) : dayOf(a) - dayOf(b)));
@@ -903,17 +990,23 @@ function startAll(items, order) {
 }
 function startReview() {
   [].slice.call($("rvMode").children).forEach(c => c.setAttribute("aria-pressed", String(c.dataset.v === rv.mode)));
+  if (rv.mode === "menu") { openMenu(); return; }
   if (rv.mode === "all") { openAllSetup(); return; }
-  rv.setup = false;
+  rv.setup = false; rv.session = null;
   const due = dueList(currentDay());
   rv.queue = shuffle(due.slice(0, CAP)); rv.total = rv.queue.length; rv.rest = due.length - rv.total;
   rv.i = 0; rv.revealed = false; renderReview(true);
 }
 function renderReview(say) {
-  const all = rv.mode === "all", finished = rv.i >= rv.queue.length;
-  $("rvAllSetup").hidden = !(all && rv.setup);
-  $("rvTitle").textContent = all ? "全部通し復習" : "今日の復習";
-  $("rvSub").textContent = all ? (rv.setup ? "期限に関係なく通しで" : "全" + rv.total + "件") : "1回40件まで";
+  const all = rv.mode !== "due", menu = rv.mode === "menu", finished = rv.i >= rv.queue.length;
+  $("rvAllSetup").hidden = !(rv.mode === "all" && rv.setup);
+  $("rvMenu").hidden = !(menu && rv.setup);
+  $("rvTitle").textContent = menu ? (rv.setup ? "今日のメニュー" : (rv.session ? rv.session.label : "まだのもの") + "の復習") : rv.mode === "all" ? "全部通し復習" : "自動の復習";
+  $("rvSub").textContent = rv.setup ? (menu ? "Dayごとに1周ずつ" : "期限に関係なく通しで") : all ? "全" + rv.total + "件" : "1回40件まで";
+  $("rvHint").textContent = menu ? "聞く → 意味を思い出す → 答えを見る。「まだ」は ★苦手 に入る。1周終わると記録に残る。"
+    : rv.mode === "all" ? "選んだ範囲を最初から最後まで通す。「まだ」は ★苦手 に入る。範囲「全部」・種類「両方」で1周すると記録に残る。"
+    : "「覚えた」は 1・3・7・14・30日後、「まだ」は明日また出る。記録はこの端末に残る。";
+  $("rvBack").textContent = menu ? "メニューに戻る" : "範囲を選び直す";
   if (all && rv.setup) {
     ["rvCard", "rvAgain", "rvShow", "rvGrade", "rvDone", "rvMore", "rvBack"].forEach(id => { $(id).hidden = true; });
     return;
@@ -925,8 +1018,15 @@ function renderReview(say) {
   $("rvMore").textContent = all ? "まだのものだけもう一回(" + rv.missed.length + "件)" : "残りを続ける";
   $("rvBack").hidden = !(finished && all);
   if (finished && all) {
-    $("rvDone").textContent = rv.total + "件を通して復習した。" + (rv.missed.length
-      ? "まだは" + rv.missed.length + "件。★苦手に入れたので、明日の復習にも出る。"
+    let lap = "";
+    if (rv.session && !rv.logged && rv.total) {
+      rv.logged = true;
+      (LOG.laps[rv.session.key] = LOG.laps[rv.session.key] || []).push({ t: ymd(), n: rv.total, ok: rv.ok });
+      saveLog();
+    }
+    if (rv.session) lap = rv.session.label + "の" + LOG.laps[rv.session.key].length + "周目が終わった。覚えた " + rv.ok + "/" + rv.total + "(" + Math.round(rv.ok / Math.max(1, rv.total) * 100) + "%)。";
+    $("rvDone").textContent = lap + rv.total + "件を通して復習した。" + (rv.missed.length
+      ? "まだは" + rv.missed.length + "件。★苦手に入れた。"
       : "全部覚えてた。");
     updateDue(); return;
   }
@@ -949,8 +1049,9 @@ function renderReview(say) {
 }
 function grade(ok) {
   const it = rv.queue[rv.i], day = currentDay(), r = recOf(it);
-  if (rv.mode === "all") {
-    if (!ok) { markWrong(it); rv.missed.push(it); }
+  bumpDay();
+  if (rv.mode !== "due") {
+    if (ok) rv.ok++; else { markWrong(it); rv.missed.push(it); }
     rv.i++; rv.revealed = false; renderReview(true); return;
   }
   if (ok) { const s = r.s + 1; srs[it[0]] = { s: s, d: day + (s < GAPS.length ? GAPS[s] : 30) }; }
@@ -969,8 +1070,8 @@ $("rvDir").addEventListener("click", e => {
 $("rvAgain").addEventListener("click", () => { if (rv.i < rv.queue.length) speak(rv.queue[rv.i][0]); });
 $("rvYes").addEventListener("click", () => grade(true));
 $("rvNo").addEventListener("click", () => grade(false));
-$("rvMore").addEventListener("click", () => { if (rv.mode === "all") startAll(rv.missed.slice(), "shuffle"); else startReview(); });
-$("rvBack").addEventListener("click", openAllSetup);
+$("rvMore").addEventListener("click", () => { if (rv.mode !== "due") startAll(rv.missed.slice(), "shuffle", null); else startReview(); });
+$("rvBack").addEventListener("click", () => { if (rv.mode === "menu") openMenu(); else openAllSetup(); });
 $("rvMode").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   rv.mode = b.dataset.v; startReview();
@@ -982,7 +1083,7 @@ $("rvMode").addEventListener("click", e => {
   updateAllInfo();
 }));
 $("rvRange").addEventListener("change", e => { RA.range = e.target.value; updateAllInfo(); });
-$("rvAllStart").addEventListener("click", () => { const p = allPool(); if (p.length) startAll(p, RA.order); });
+$("rvAllStart").addEventListener("click", () => { const p = allPool(); if (p.length) startAll(p, RA.order, allSession()); });
 function showView(v) {
   stop(); render();
   try { window.scrollTo(0, 0); } catch (e) {}
@@ -1531,7 +1632,7 @@ $("tRetry").addEventListener("click", () => {
 $("tBack").addEventListener("click", openTestSetup);
 
 /* Backup: move marks, review schedule and scores between apps or devices. */
-const BK_KEYS = ["nghe-noi-marks", "nghe-noi-srs", "nghe-noi-hist", "nghe-noi-read"];
+const BK_KEYS = ["nghe-noi-marks", "nghe-noi-srs", "nghe-noi-hist", "nghe-noi-read", "nghe-noi-log"];
 $("bkOut").addEventListener("click", async () => {
   const o = { v: 1 };
   BK_KEYS.forEach(k => { try { o[k] = localStorage.getItem(k); } catch (e) {} });
@@ -1552,6 +1653,7 @@ $("bkIn").addEventListener("click", () => {
     try { srs = JSON.parse(o["nghe-noi-srs"] || "{}") || {}; } catch (e) {}
     try { hist = JSON.parse(o["nghe-noi-hist"] || "[]") || []; } catch (e) {}
     try { readDone = JSON.parse(o["nghe-noi-read"] || "{}") || {}; } catch (e) {}
+    try { LOG = JSON.parse(o["nghe-noi-log"] || "null") || { laps: {}, days: {} }; LOG.laps = LOG.laps || {}; LOG.days = LOG.days || {}; } catch (e) {}
     render(); updateDue();
     $("bkMsg").textContent = "読み込んだ。★ " + marks.size + "件、復習の記録 " + Object.keys(srs).length + "件。";
   } catch (e) { $("bkMsg").textContent = "読み込めなかった。コードを最初から最後まで全部貼り付けたか確認して。"; }
