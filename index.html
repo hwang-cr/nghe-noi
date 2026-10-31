@@ -83,8 +83,8 @@ details.fold > summary::after { content: "▾"; color: var(--muted); font-weight
 details.fold[open] > summary::after { content: "▴"; }
 details.fold[open] > summary { margin-bottom: 10px; }
 .sum-side { margin-left: auto; color: var(--muted); font-weight: 500; font-size: 13px; }
-#viewSeg { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; border-radius: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 6px max(8px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)); }
-#viewSeg button { min-height: 50px; font-size: 14px; border-radius: 10px; white-space: nowrap; padding: 6px 4px; }
+#viewSeg { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; border-radius: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 6px max(8px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)); }
+#viewSeg button { min-height: 50px; font-size: 13px; border-radius: 10px; white-space: nowrap; padding: 6px 4px; }
 #viewSeg button[aria-pressed="true"] { background: var(--surface-2); color: var(--accent); }
 main { padding-bottom: 84px; }
 #bkTxt { width: 100%; font-size: 16px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); font-family: ui-monospace, monospace; resize: vertical; }
@@ -145,6 +145,23 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
 .hrow { display: flex; justify-content: space-between; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
 .hrow:last-child { border-bottom: 0; }
 .hrow span:last-child { font-weight: 700; }
+
+.tk-steps { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; }
+.tk-steps button { padding: 7px 2px; font-size: 13px; white-space: nowrap; }
+.row .n.spk { font-family: var(--font-jp); font-weight: 700; font-size: 12px; color: var(--accent); }
+.row .n.spk.b { color: var(--mark); }
+.row.now { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--accent); }
+.tk-hide .row .v, .tk-hide .row .j { color: transparent; background: var(--surface-2); border-radius: 6px; user-select: none; }
+.tk-big { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tk-big button { min-height: 52px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-weight: 700; }
+.tk-big .go { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.tk-big .rec { color: var(--mark); border-color: var(--mark); }
+.tk-big .rec[aria-pressed="true"] { background: var(--mark); color: #fff; }
+.sp-item { display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.sp-item .q { font-family: var(--font-jp); font-weight: 700; }
+.sp-item .a { font-weight: 500; overflow-wrap: anywhere; }
+.sp-item .a.hidden { color: transparent; background: var(--surface-2); border-radius: 8px; user-select: none; }
+.tk-row-done .v::after { content: " ✓"; color: var(--accent); }
 @media (prefers-reduced-motion: no-preference) { .card { transition: border-color .2s; } .card.playing { border-color: var(--accent); } }
 </style>
 <style>body { padding-top: max(16px, env(safe-area-inset-top, 0px)); padding-bottom: max(24px, env(safe-area-inset-bottom, 0px)); }</style>
@@ -171,6 +188,7 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
     <button id="viewReview" aria-pressed="false">復習</button>
     <button id="viewTest" aria-pressed="false">テスト</button>
     <button id="viewRead" aria-pressed="false">読解</button>
+    <button id="viewTalk" aria-pressed="false">会話</button>
   </nav>
 
   <div class="view" id="learnView">
@@ -332,6 +350,63 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
       <div class="view" id="rdQs"></div>
       <p class="rv-done" id="rdScore" hidden></p>
       <button class="once" id="rdBack">一覧に戻る</button>
+    </div>
+  </section>
+  <section class="view" id="talkView" hidden aria-label="会話">
+    <div class="view" id="tkList">
+      <p class="hint">毎日1本の南部会話。①聞く → ②確認 → ③シャドー → ④話す の順で20〜30分。テーマは 月木=仕事、火金=生活、水=家族、土=ニュース・雑談、日=週の復習。</p>
+      <div class="streak" id="tkStreak"></div>
+      <div class="list" id="tkItems"></div>
+    </div>
+    <div class="view" id="tkPage" hidden>
+      <div class="rv-head"><strong id="tkTitle"></strong><span id="tkMeta"></span></div>
+      <div class="seg tk-steps" id="tkSteps">
+        <button data-v="1" aria-pressed="true">①聞く</button><button data-v="2" aria-pressed="false">②確認</button><button data-v="3" aria-pressed="false">③シャドー</button><button data-v="4" aria-pressed="false">④話す</button>
+      </div>
+      <p class="hint" id="tkHint"></p>
+      <div class="opt"><label>スピード</label>
+        <div class="seg" id="tkRate"><button data-v="0.65">ゆっくり</button><button data-v="0.85" aria-pressed="true">普通</button><button data-v="1">速め</button></div></div>
+
+      <div class="view" id="tk1">
+        <div class="tk-big"><button class="go" id="tkPlayAll">通しで聞く</button><button id="tkStop1">止める</button></div>
+        <div class="list tk-hide" id="tkLines1"></div>
+        <h2>内容チェック</h2>
+        <div class="view" id="tkQs"></div>
+        <p class="rv-done" id="tkScore" hidden></p>
+      </div>
+
+      <div class="view" id="tk2" hidden>
+        <div class="tk-big"><button class="go" id="tkPlayAll2">通しで聞く</button><button id="tkJp" aria-pressed="false">訳を見る</button></div>
+        <div class="list" id="tkLines2"></div>
+        <p class="hint">聞き取れなかった行をタップして、何回でも聞き直す。</p>
+      </div>
+
+      <div class="view" id="tk3" hidden>
+        <div class="card" id="shCard" aria-live="polite">
+          <div class="count"><span id="shPos"></span><span id="shSpk"></span></div>
+          <div class="vi" id="shVi"></div>
+          <div class="jp" id="shJp"></div>
+        </div>
+        <div class="transport">
+          <button id="shPrev">前へ</button>
+          <button id="shAuto" class="go">自動シャドー</button>
+          <button id="shNext">次へ</button>
+        </div>
+        <button class="once" id="shOnce">この行をもう一回</button>
+        <div class="opt"><label>文字</label>
+          <div class="seg" id="shText"><button data-v="1" aria-pressed="true">出す</button><button data-v="0" aria-pressed="false">隠す</button></div></div>
+        <p class="hint">音声のすぐ後を追いかけて声に出す。自動では、1行流したあとに同じ長さ+αの間があるので、そこで言う。</p>
+      </div>
+
+      <div class="view" id="tk4" hidden>
+        <div class="view" id="spItems"></div>
+        <h2>GPT Voiceで練習</h2>
+        <button class="rv-show" id="tkGpt">GPT Voice用の指示をコピー</button>
+        <p class="hint" id="tkGptMsg">コピーしてGPTに貼る → 南部の発音で読んでもらう → 自分の要約を訂正してもらう。</p>
+        <button class="once" id="tkDone" style="border-style:solid">今日の会話を完了にする</button>
+      </div>
+
+      <button class="once" id="tkBack">一覧に戻る</button>
     </div>
   </section>
 </main>
@@ -743,13 +818,13 @@ function list() {
 }
 function cur() { const l = list(); if (state.idx >= l.length) state.idx = 0; return l[state.idx]; }
 
-function speak(text) {
+function speak(text, opt) {
   return new Promise(res => {
     try { if (navigator.audioSession) navigator.audioSession.type = "ambient"; } catch (e) {}
     if (!window.speechSynthesis) return res();
     try { speechSynthesis.cancel(); } catch (e) {}
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = "vi-VN"; if (voice) u.voice = voice; u.rate = state.rate;
+    u.lang = "vi-VN"; if (voice) u.voice = voice; u.rate = (opt && opt.rate) || state.rate; u.pitch = (opt && opt.pitch) || 1;
     u.onend = u.onerror = () => res();
     speechSynthesis.speak(u);
   });
@@ -1112,15 +1187,19 @@ function showView(v) {
   $("reviewView").hidden = v !== "review";
   $("testView").hidden = v !== "test";
   $("readView").hidden = v !== "read";
-  [["viewLearn", "learn"], ["viewReview", "review"], ["viewTest", "test"], ["viewRead", "read"]].forEach(p => $(p[0]).setAttribute("aria-pressed", String(v === p[1])));
+  $("talkView").hidden = v !== "talk";
+  tkStop();
+  [["viewLearn", "learn"], ["viewReview", "review"], ["viewTest", "test"], ["viewRead", "read"], ["viewTalk", "talk"]].forEach(p => $(p[0]).setAttribute("aria-pressed", String(v === p[1])));
   if (v === "review") startReview();
   if (v === "test") openTestSetup();
   if (v === "read") openReadList();
+  if (v === "talk") openTalkList();
 }
 $("viewLearn").addEventListener("click", () => showView("learn"));
 $("viewReview").addEventListener("click", () => showView("review"));
 $("viewTest").addEventListener("click", () => showView("test"));
 $("viewRead").addEventListener("click", () => showView("read"));
+$("viewTalk").addEventListener("click", () => showView("talk"));
 
 /* Reading: short emails and minutes built from what has been learned. */
 const READ = [
@@ -1652,8 +1731,278 @@ $("tRetry").addEventListener("click", () => {
 });
 $("tBack").addEventListener("click", openTestSetup);
 
+/* Talk: one southern-dialect conversation a day. Listen → check → shadow → speak. */
+const TALK = [
+ {
+  id: "t1", date: "2026-10-30", theme: "仕事", title: "試験スケジュールの相談",
+  who: { a: "客", b: "私" }, whoFull: "客 = chị Thảo(日系メーカー担当)、私 = Hwang",
+  lines: [
+   ["a", "Alo, em Hwang hả? Chị Thảo bên công ty Sakura nè.", "もしもし、Hwangくん?サクラ社のタオだよ"],
+   ["b", "Dạ, em chào chị Thảo. Chị khỏe hông ạ?", "はい、タオさんこんにちは。お元気ですか?"],
+   ["a", "Chị khỏe. Chị gọi để hỏi lịch thử nghiệm cái máy lọc không khí mới đó em.", "元気よ。新しい空気清浄機の試験スケジュールを聞きたくて電話したの"],
+   ["b", "Dạ. Bên chị gửi mẫu qua khi nào được ạ?", "はい。サンプルはいつ送っていただけますか?"],
+   ["a", "Chắc thứ Hai tuần sau mẫu tới chỗ em. Thử nghiệm mất bao lâu vậy em?", "たぶん来週の月曜にサンプルがそっちに着くよ。試験はどれくらいかかる?"],
+   ["b", "Dạ, thử nghiệm khoảng hai tuần, rồi làm báo cáo thêm ba ngày nữa ạ.", "試験は約2週間で、そのあと報告書にさらに3日かかります"],
+   ["a", "Trời, lâu vậy hả? Bên chị cần giấy chứng nhận trước cuối tháng mười hai lận.", "えー、そんなにかかるの?こっちは12月末までに証明書が要るのよ"],
+   ["b", "Dạ, em hiểu. Nếu mẫu tới đúng thứ Hai thì em xếp lịch ưu tiên cho chị nghen.", "はい、分かります。月曜にちゃんと届けば、優先でスケジュールを組みますね"],
+   ["a", "Vậy thì tốt quá. Mà có tốn thêm phí hông em?", "それは助かる。でも追加費用はかかる?"],
+   ["b", "Dạ, xếp lịch ưu tiên thì không tính thêm phí ạ. Nhưng nếu thử nghiệm bị rớt thì phải làm lại, chi phí sẽ khác ạ.", "優先スケジュールなら追加費用はかかりません。ただ、試験で不合格だとやり直しになるので、費用が変わります"],
+   ["a", "Ừ, chị hiểu rồi. Em gửi báo giá với lịch cụ thể qua email giùm chị nha.", "うん、分かった。見積と具体的なスケジュールをメールで送ってね"],
+   ["b", "Dạ, chiều nay em gửi liền cho chị. Chị nhớ gửi kèm tài liệu kỹ thuật của sản phẩm nghen.", "はい、今日の午後すぐ送ります。製品の技術資料も一緒に送ってくださいね"],
+   ["a", "Ok em. Cảm ơn em nhiều nha.", "OK。ありがとうね"],
+   ["b", "Dạ, em cảm ơn chị. Chào chị ạ.", "ありがとうございます。失礼します"]
+  ],
+  qs: [
+   { q: "電話の目的は?", c: ["試験スケジュールを聞く", "見積を値下げしてほしい", "サンプルを返してほしい", "会議を予約したい"] },
+   { q: "サンプルはいつ届く?", c: ["来週の月曜", "今日の午後", "12月末", "来週の金曜"] },
+   { q: "試験と報告書で全部どれくらい?", c: ["約2週間+3日", "約1週間", "約1ヶ月", "3日だけ"] },
+   { q: "優先スケジュールの追加費用は?", c: ["かからない", "少しかかる", "倍になる", "不合格ならかからない"] },
+   { q: "Hwangが今日の午後にすることは?", c: ["見積とスケジュールをメールで送る", "サンプルを取りに行く", "電話をかけ直す", "証明書を出す"] }
+  ],
+  speak: [
+   { q: "この会話を2〜3文でベトナム語で要約して", a: "Chị Thảo gọi hỏi lịch thử nghiệm máy lọc không khí. Thử nghiệm khoảng hai tuần, làm báo cáo thêm ba ngày. Chiều nay em gửi báo giá với lịch qua email." },
+   { q: "「サンプルはいつ届きますか?」と聞く", a: "Dạ, mẫu khi nào tới vậy chị?" },
+   { q: "「試験は約2週間、報告書にさらに3日です」", a: "Dạ, thử nghiệm khoảng hai tuần, báo cáo thêm ba ngày nữa ạ." },
+   { q: "「月曜に届けば、優先で組みますね」", a: "Nếu mẫu tới thứ Hai thì em xếp lịch ưu tiên cho chị nghen." },
+   { q: "「不合格だとやり直しで、費用が変わります」", a: "Nếu thử nghiệm bị rớt thì phải làm lại, chi phí sẽ khác ạ." },
+   { q: "「今日の午後すぐ送ります」", a: "Dạ, chiều nay em gửi liền cho chị ạ." }
+  ]
+ }
+];
+let talkDone = {};
+try { talkDone = JSON.parse(localStorage.getItem("nghe-noi-talk") || "{}") || {}; } catch (e) { talkDone = {}; }
+function saveTalk() { try { localStorage.setItem("nghe-noi-talk", JSON.stringify(talkDone)); } catch (e) {} }
+const TK = { t: null, step: 1, rate: 0.85, run: 0, jp: false, sh: 0, shText: 1, shAuto: false, plays: 0 };
+const PITCH = { a: 1.15, b: 0.88 };
+function tkSay(line) { return speak(line[1], { pitch: PITCH[line[0]], rate: TK.rate }); }
+function tkStop() { TK.run++; TK.shAuto = false; try { speechSynthesis.cancel(); } catch (e) {} paintNow(-1); if ($("shAuto")) $("shAuto").textContent = "自動シャドー"; }
+function paintNow(i) {
+  ["tkLines1", "tkLines2"].forEach(id => [].slice.call($(id).children).forEach((r, k) => r.classList.toggle("now", k === i)));
+}
+function talkStreak() {
+  const days = new Set(Object.keys(talkDone).map(k => talkDone[k].done).filter(Boolean));
+  let n = 0; const d = new Date();
+  if (!days.has(ymd(d))) d.setDate(d.getDate() - 1);
+  while (days.has(ymd(d))) { n++; d.setDate(d.getDate() - 1); }
+  return { n: n, total: Object.keys(talkDone).filter(k => talkDone[k].done).length };
+}
+function openTalkList() {
+  tkStop();
+  $("tkList").hidden = false; $("tkPage").hidden = true;
+  const st = talkStreak();
+  $("tkStreak").innerHTML = "<span>連続 <b>" + st.n + "</b> 日</span><span>完了 <b>" + st.total + "</b> / " + TALK.length + " 本</span>";
+  const box = $("tkItems"); box.textContent = "";
+  TALK.slice().reverse().forEach((t, i) => {
+    const d = talkDone[t.id] || {};
+    const b = document.createElement("button"); b.className = "row" + (d.done ? " tk-row-done" : "");
+    const n = document.createElement("span"); n.className = "n"; n.textContent = TALK.length - i;
+    const w = document.createElement("span");
+    const v = document.createElement("div"); v.className = "v"; v.textContent = t.title;
+    const j = document.createElement("div"); j.className = "j";
+    j.textContent = md(t.date) + "・" + t.theme + "・" + t.lines.length + "行" + (d.gist != null ? "・内容 " + d.gist + "/" + t.qs.length : "") + (d.done ? "・完了 " + md(d.done) : "");
+    w.appendChild(v); w.appendChild(j); b.appendChild(n); b.appendChild(w);
+    b.addEventListener("click", () => openTalk(t));
+    box.appendChild(b);
+  });
+}
+function lineRow(l, i, onClick) {
+  const t = TK.t;
+  const b = document.createElement("button"); b.className = "row";
+  const n = document.createElement("span"); n.className = "n spk" + (l[0] === "b" ? " b" : ""); n.textContent = t.who[l[0]];
+  const w = document.createElement("span");
+  const v = document.createElement("div"); v.className = "v"; v.textContent = l[1];
+  const j = document.createElement("div"); j.className = "j"; j.textContent = l[2];
+  w.appendChild(v); w.appendChild(j); b.appendChild(n); b.appendChild(w);
+  b.addEventListener("click", onClick);
+  return b;
+}
+const HINTS = {
+  1: "文字なしで2回通して聞く。何の話かつかんだら、下の問題に答える。",
+  2: "スクリプトを見ながら聞き直す。聞き取れなかった行だけタップ。",
+  3: "1行ずつ、音声を追いかけて声に出す。2〜3周が目安。",
+  4: "日本語を見てベトナム語で言う → 録音して聞き比べ → 答えで確認。最後にGPT Voiceで南部の発音チェック。"
+};
+function openTalk(t) {
+  tkStop();
+  TK.t = t; TK.jp = false; TK.sh = 0; TK.plays = 0;
+  $("tkList").hidden = true; $("tkPage").hidden = false;
+  $("tkTitle").textContent = t.title;
+  $("tkMeta").textContent = md(t.date) + "・" + t.theme + "・" + t.whoFull;
+  ["tkLines1", "tkLines2"].forEach(id => {
+    const box = $(id); box.textContent = "";
+    t.lines.forEach((l, i) => box.appendChild(lineRow(l, i, () => { tkStop(); paintNow(i); tkSay(l).then(() => paintNow(-1)); })));
+  });
+  [].slice.call($("tkLines2").querySelectorAll(".j")).forEach(e => { e.hidden = true; });
+  $("tkJp").textContent = "訳を見る";
+  $("tkPlayAll").textContent = "通しで聞く";
+  buildQs(t); buildSpeak(t); paintSh();
+  $("tkGptMsg").textContent = "コピーしてGPTに貼る → 南部の発音で読んでもらう → 自分の要約を訂正してもらう。";
+  paintDone();
+  setStep(1);
+}
+function paintDone() {
+  const d = talkDone[TK.t.id] || {};
+  $("tkDone").textContent = d.done ? "完了済み(" + md(d.done) + ")" : "今日の会話を完了にする";
+}
+function setStep(n) {
+  tkStop(); TK.step = n;
+  [1, 2, 3, 4].forEach(k => { $("tk" + k).hidden = k !== n; });
+  [].slice.call($("tkSteps").children).forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.v) === n)));
+  $("tkHint").textContent = HINTS[n];
+  try { window.scrollTo(0, 0); } catch (e) {}
+}
+$("tkSteps").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setStep(Number(b.dataset.v)); });
+$("tkRate").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  TK.rate = Number(b.dataset.v);
+  [].slice.call($("tkRate").children).forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+});
+async function playAll() {
+  tkStop(); const my = TK.run;
+  const t = TK.t;
+  for (let i = 0; i < t.lines.length; i++) {
+    paintNow(i);
+    await tkSay(t.lines[i]); if (my !== TK.run) return;
+    await sleep(500); if (my !== TK.run) return;
+  }
+  paintNow(-1);
+  return true;
+}
+$("tkPlayAll").addEventListener("click", async () => {
+  const ok = await playAll();
+  if (ok) { TK.plays++; $("tkPlayAll").textContent = "もう一回(" + TK.plays + "回聞いた)"; }
+});
+$("tkStop1").addEventListener("click", tkStop);
+$("tkPlayAll2").addEventListener("click", () => { playAll(); });
+$("tkJp").addEventListener("click", () => {
+  TK.jp = !TK.jp; $("tkJp").textContent = TK.jp ? "訳を隠す" : "訳を見る";
+  [].slice.call($("tkLines2").querySelectorAll(".j")).forEach(e => { e.hidden = !TK.jp; });
+});
+function buildQs(t) {
+  const qb = $("tkQs"); qb.textContent = ""; $("tkScore").hidden = true;
+  let done = 0, score = 0;
+  t.qs.forEach((q, qi) => {
+    const wrap = document.createElement("div"); wrap.className = "view";
+    const h = document.createElement("div"); h.className = "jp"; h.textContent = (qi + 1) + ". " + q.q;
+    const ch = document.createElement("div"); ch.className = "choices";
+    shuffle(q.c.slice()).forEach(txt => {
+      const b = document.createElement("button"); b.className = "choice jpc"; b.textContent = txt;
+      b.addEventListener("click", () => {
+        if (wrap.dataset.done) return; wrap.dataset.done = "1";
+        const ok = txt === q.c[0]; if (ok) score++; done++;
+        [].slice.call(ch.children).forEach(c => { c.disabled = true; if (c.textContent === q.c[0]) c.classList.add("ok"); else if (c === b) c.classList.add("ng"); });
+        if (done === t.qs.length) {
+          const sc = $("tkScore"); sc.hidden = false;
+          sc.textContent = t.qs.length + "問中 " + score + " 問正解。" + (score === t.qs.length ? "内容はつかめてる。②確認へ。" : "②確認でスクリプトを見て、間違えた所を聞き直そう。");
+          const d = talkDone[t.id] || {};
+          if (d.gist == null || score > d.gist) { d.gist = score; talkDone[t.id] = d; saveTalk(); }
+        }
+      });
+      ch.appendChild(b);
+    });
+    wrap.appendChild(h); wrap.appendChild(ch); qb.appendChild(wrap);
+  });
+}
+/* Shadowing */
+function paintSh() {
+  const t = TK.t, l = t.lines[TK.sh];
+  $("shPos").textContent = (TK.sh + 1) + " / " + t.lines.length;
+  $("shSpk").textContent = t.who[l[0]];
+  $("shVi").textContent = l[1]; $("shVi").classList.toggle("hidden", !TK.shText);
+  $("shJp").textContent = l[2];
+  $("shCard").classList.toggle("playing", TK.shAuto);
+}
+async function shOne() { const t0 = Date.now(); await tkSay(TK.t.lines[TK.sh]); return Date.now() - t0; }
+async function shLoop() {
+  const my = TK.run;
+  while (TK.shAuto && my === TK.run) {
+    paintSh();
+    const dur = await shOne(); if (my !== TK.run) return;
+    await sleep(Math.max(1500, dur * 1.3 + 700)); if (my !== TK.run) return;
+    if (TK.sh >= TK.t.lines.length - 1) { TK.sh = 0; TK.shAuto = false; $("shAuto").textContent = "自動シャドー"; paintSh(); return; }
+    TK.sh++;
+  }
+}
+$("shAuto").addEventListener("click", () => {
+  if (TK.shAuto) { tkStop(); paintSh(); return; }
+  tkStop(); TK.shAuto = true; $("shAuto").textContent = "停止"; shLoop();
+});
+$("shPrev").addEventListener("click", () => { tkStop(); TK.sh = Math.max(0, TK.sh - 1); paintSh(); shOne(); });
+$("shNext").addEventListener("click", () => { tkStop(); TK.sh = Math.min(TK.t.lines.length - 1, TK.sh + 1); paintSh(); shOne(); });
+$("shOnce").addEventListener("click", () => { tkStop(); paintSh(); shOne(); });
+$("shText").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  TK.shText = Number(b.dataset.v);
+  [].slice.call($("shText").children).forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  paintSh();
+});
+/* Speaking: prompt → say it → record and compare → reveal model */
+let recState = null;
+async function toggleRec(btn, playBtn) {
+  if (recState && recState.btn === btn) { try { recState.rec.stop(); } catch (e) {} return; }
+  if (recState) { try { recState.rec.stop(); } catch (e) {} }
+  if (!navigator.mediaDevices || !window.MediaRecorder) { btn.textContent = "録音非対応"; return; }
+  try {
+    tkStop();
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const rec = new MediaRecorder(stream); const chunks = [];
+    rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.onstop = () => {
+      stream.getTracks().forEach(tr => tr.stop());
+      const blob = new Blob(chunks, { type: rec.mimeType || "audio/mp4" });
+      if (playBtn.dataset.url) URL.revokeObjectURL(playBtn.dataset.url);
+      playBtn.dataset.url = URL.createObjectURL(blob); playBtn.disabled = false;
+      btn.setAttribute("aria-pressed", "false"); btn.textContent = "録音し直す";
+      recState = null;
+    };
+    rec.start(); recState = { rec: rec, btn: btn };
+    btn.setAttribute("aria-pressed", "true"); btn.textContent = "■ 止める";
+  } catch (e) { btn.textContent = "マイク不可"; }
+}
+function buildSpeak(t) {
+  const box = $("spItems"); box.textContent = "";
+  t.speak.forEach((sp, i) => {
+    const it = document.createElement("div"); it.className = "sp-item";
+    const q = document.createElement("div"); q.className = "q"; q.textContent = (i + 1) + ". " + sp.q;
+    const a = document.createElement("div"); a.className = "a hidden"; a.textContent = sp.a;
+    const row = document.createElement("div"); row.className = "tk-big";
+    const rec = document.createElement("button"); rec.className = "rec"; rec.textContent = "● 録音"; rec.setAttribute("aria-pressed", "false");
+    const play = document.createElement("button"); play.textContent = "自分の声を聞く"; play.disabled = true;
+    const row2 = document.createElement("div"); row2.className = "tk-big";
+    const show = document.createElement("button"); show.className = "go"; show.textContent = "答えを見る";
+    const hear = document.createElement("button"); hear.textContent = "答えを聞く";
+    rec.addEventListener("click", () => toggleRec(rec, play));
+    play.addEventListener("click", () => { if (play.dataset.url) { tkStop(); new Audio(play.dataset.url).play().catch(() => {}); } });
+    show.addEventListener("click", () => { a.classList.remove("hidden"); speak(sp.a, { rate: TK.rate }); });
+    hear.addEventListener("click", () => { tkStop(); speak(sp.a, { rate: TK.rate }); });
+    row.appendChild(rec); row.appendChild(play); row2.appendChild(show); row2.appendChild(hear);
+    it.appendChild(q); it.appendChild(a); it.appendChild(row); it.appendChild(row2);
+    box.appendChild(it);
+  });
+}
+function gptText(t) {
+  const script = t.lines.map(l => (l[0] === "a" ? "A" : "B") + ": " + l[1]).join("\n");
+  return "これからベトナム語の会話練習をします。説明は日本語、練習はベトナム語で。南部(サイゴン)方言だけ使ってください。\n\n" +
+    "1. 下の会話を、南部の発音で自然な速さで読んでください。Aは女性(" + t.who.a + ")、Bは男性(" + t.who.b + ")として声を分けて。\n" +
+    "2. 読み終わったら、私がベトナム語で内容を2〜3文で要約します。声調・発音・言い回しを南部基準で厳しく訂正してください。遠慮した言い方はいりません。\n" +
+    "3. 次に、Aの役をあなたが少し変えながら演じて、私がBとして答えるロールプレイを3往復。\n" +
+    "4. 最後に、私の発音の弱点を3つまとめてください。\n\n" +
+    "会話(" + t.title + "):\n" + script;
+}
+$("tkGpt").addEventListener("click", async () => {
+  const txt = gptText(TK.t); let ok = false;
+  try { await navigator.clipboard.writeText(txt); ok = true; } catch (e) {}
+  $("tkGptMsg").textContent = ok ? "コピーした。GPTアプリに貼り付けてから、音声モードに切り替えて始めて。" : "自動でコピーできなかった。";
+});
+$("tkDone").addEventListener("click", () => {
+  const d = talkDone[TK.t.id] || {};
+  if (!d.done) { d.done = ymd(); talkDone[TK.t.id] = d; saveTalk(); }
+  paintDone();
+});
+$("tkBack").addEventListener("click", openTalkList);
+
 /* Backup: move marks, review schedule and scores between apps or devices. */
-const BK_KEYS = ["nghe-noi-marks", "nghe-noi-srs", "nghe-noi-hist", "nghe-noi-read", "nghe-noi-log"];
+const BK_KEYS = ["nghe-noi-marks", "nghe-noi-srs", "nghe-noi-hist", "nghe-noi-read", "nghe-noi-log", "nghe-noi-talk"];
 $("bkOut").addEventListener("click", async () => {
   const o = { v: 1 };
   BK_KEYS.forEach(k => { try { o[k] = localStorage.getItem(k); } catch (e) {} });
@@ -1675,6 +2024,7 @@ $("bkIn").addEventListener("click", () => {
     try { hist = JSON.parse(o["nghe-noi-hist"] || "[]") || []; } catch (e) {}
     try { readDone = JSON.parse(o["nghe-noi-read"] || "{}") || {}; } catch (e) {}
     try { LOG = JSON.parse(o["nghe-noi-log"] || "null") || { laps: {}, days: {} }; LOG.laps = LOG.laps || {}; LOG.days = LOG.days || {}; } catch (e) {}
+    try { talkDone = JSON.parse(o["nghe-noi-talk"] || "{}") || {}; } catch (e) {}
     render(); updateDue();
     $("bkMsg").textContent = "読み込んだ。★ " + marks.size + "件、復習の記録 " + Object.keys(srs).length + "件。";
   } catch (e) { $("bkMsg").textContent = "読み込めなかった。コードを最初から最後まで全部貼り付けたか確認して。"; }
