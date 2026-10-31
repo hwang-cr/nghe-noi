@@ -83,8 +83,8 @@ details.fold > summary::after { content: "▾"; color: var(--muted); font-weight
 details.fold[open] > summary::after { content: "▴"; }
 details.fold[open] > summary { margin-bottom: 10px; }
 .sum-side { margin-left: auto; color: var(--muted); font-weight: 500; font-size: 13px; }
-#viewSeg { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; border-radius: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 6px max(8px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)); }
-#viewSeg button { min-height: 50px; font-size: 13px; border-radius: 10px; white-space: nowrap; padding: 6px 4px; }
+#viewSeg { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; border-radius: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 6px max(8px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)); }
+#viewSeg button { min-height: 50px; font-size: 14px; border-radius: 10px; white-space: nowrap; padding: 6px 4px; }
 #viewSeg button[aria-pressed="true"] { background: var(--surface-2); color: var(--accent); }
 main { padding-bottom: 84px; }
 #bkTxt { width: 100%; font-size: 16px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); font-family: ui-monospace, monospace; resize: vertical; }
@@ -145,23 +145,6 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
 .hrow { display: flex; justify-content: space-between; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
 .hrow:last-child { border-bottom: 0; }
 .hrow span:last-child { font-weight: 700; }
-
-.tk-steps { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; }
-.tk-steps button { padding: 7px 2px; font-size: 13px; white-space: nowrap; }
-.row .n.spk { font-family: var(--font-jp); font-weight: 700; font-size: 12px; color: var(--accent); }
-.row .n.spk.b { color: var(--mark); }
-.row.now { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--accent); }
-.tk-hide .row .v, .tk-hide .row .j { color: transparent; background: var(--surface-2); border-radius: 6px; user-select: none; }
-.tk-big { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.tk-big button { min-height: 52px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-weight: 700; }
-.tk-big .go { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
-.tk-big .rec { color: var(--mark); border-color: var(--mark); }
-.tk-big .rec[aria-pressed="true"] { background: var(--mark); color: #fff; }
-.sp-item { display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
-.sp-item .q { font-family: var(--font-jp); font-weight: 700; }
-.sp-item .a { font-weight: 500; overflow-wrap: anywhere; }
-.sp-item .a.hidden { color: transparent; background: var(--surface-2); border-radius: 8px; user-select: none; }
-.tk-row-done .v::after { content: " ✓"; color: var(--accent); }
 @media (prefers-reduced-motion: no-preference) { .card { transition: border-color .2s; } .card.playing { border-color: var(--accent); } }
 </style>
 <style>body { padding-top: max(16px, env(safe-area-inset-top, 0px)); padding-bottom: max(24px, env(safe-area-inset-bottom, 0px)); }</style>
@@ -188,7 +171,6 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
     <button id="viewReview" aria-pressed="false">復習</button>
     <button id="viewTest" aria-pressed="false">テスト</button>
     <button id="viewRead" aria-pressed="false">読解</button>
-    <button id="viewTalk" aria-pressed="false">会話</button>
   </nav>
 
   <div class="view" id="learnView">
@@ -350,63 +332,6 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
       <div class="view" id="rdQs"></div>
       <p class="rv-done" id="rdScore" hidden></p>
       <button class="once" id="rdBack">一覧に戻る</button>
-    </div>
-  </section>
-  <section class="view" id="talkView" hidden aria-label="会話">
-    <div class="view" id="tkList">
-      <p class="hint">毎日1本の南部会話。①聞く → ②確認 → ③シャドー → ④話す の順で20〜30分。テーマは 月木=仕事、火金=生活、水=家族、土=ニュース・雑談、日=週の復習。</p>
-      <div class="streak" id="tkStreak"></div>
-      <div class="list" id="tkItems"></div>
-    </div>
-    <div class="view" id="tkPage" hidden>
-      <div class="rv-head"><strong id="tkTitle"></strong><span id="tkMeta"></span></div>
-      <div class="seg tk-steps" id="tkSteps">
-        <button data-v="1" aria-pressed="true">①聞く</button><button data-v="2" aria-pressed="false">②確認</button><button data-v="3" aria-pressed="false">③シャドー</button><button data-v="4" aria-pressed="false">④話す</button>
-      </div>
-      <p class="hint" id="tkHint"></p>
-      <div class="opt"><label>スピード</label>
-        <div class="seg" id="tkRate"><button data-v="0.65">ゆっくり</button><button data-v="0.85" aria-pressed="true">普通</button><button data-v="1">速め</button></div></div>
-
-      <div class="view" id="tk1">
-        <div class="tk-big"><button class="go" id="tkPlayAll">通しで聞く</button><button id="tkStop1">止める</button></div>
-        <div class="list tk-hide" id="tkLines1"></div>
-        <h2>内容チェック</h2>
-        <div class="view" id="tkQs"></div>
-        <p class="rv-done" id="tkScore" hidden></p>
-      </div>
-
-      <div class="view" id="tk2" hidden>
-        <div class="tk-big"><button class="go" id="tkPlayAll2">通しで聞く</button><button id="tkJp" aria-pressed="false">訳を見る</button></div>
-        <div class="list" id="tkLines2"></div>
-        <p class="hint">聞き取れなかった行をタップして、何回でも聞き直す。</p>
-      </div>
-
-      <div class="view" id="tk3" hidden>
-        <div class="card" id="shCard" aria-live="polite">
-          <div class="count"><span id="shPos"></span><span id="shSpk"></span></div>
-          <div class="vi" id="shVi"></div>
-          <div class="jp" id="shJp"></div>
-        </div>
-        <div class="transport">
-          <button id="shPrev">前へ</button>
-          <button id="shAuto" class="go">自動シャドー</button>
-          <button id="shNext">次へ</button>
-        </div>
-        <button class="once" id="shOnce">この行をもう一回</button>
-        <div class="opt"><label>文字</label>
-          <div class="seg" id="shText"><button data-v="1" aria-pressed="true">出す</button><button data-v="0" aria-pressed="false">隠す</button></div></div>
-        <p class="hint">音声のすぐ後を追いかけて声に出す。自動では、1行流したあとに同じ長さ+αの間があるので、そこで言う。</p>
-      </div>
-
-      <div class="view" id="tk4" hidden>
-        <div class="view" id="spItems"></div>
-        <h2>GPT Voiceで練習</h2>
-        <button class="rv-show" id="tkGpt">GPT Voice用の指示をコピー</button>
-        <p class="hint" id="tkGptMsg">コピーしてGPTに貼る → 南部の発音で読んでもらう → 自分の要約を訂正してもらう。</p>
-        <button class="once" id="tkDone" style="border-style:solid">今日の会話を完了にする</button>
-      </div>
-
-      <button class="once" id="tkBack">一覧に戻る</button>
     </div>
   </section>
 </main>
@@ -611,7 +536,17 @@ const DATA = {
     ["Giải pháp này giúp anh tiết kiệm chi phí và thời gian ạ.", "この方法で費用と時間を節約できます", 17],
     ["Bên em hỗ trợ khách hàng ở khu vực miền Nam và toàn quốc ạ.", "南部地域と全国のお客様をサポートしています", 17],
     ["Em mong hai bên hợp tác lâu dài nghen.", "長くお付き合いできればと思います", 17],
-    ["Uy tín là điều quan trọng nhất trong quan hệ làm ăn ạ.", "商売の関係では信用が一番大事です", 17]
+    ["Uy tín là điều quan trọng nhất trong quan hệ làm ăn ạ.", "商売の関係では信用が一番大事です", 17],
+    ["Em xin ý kiến sếp rồi trả lời anh sau nghen.", "上司に相談してから、後でお返事しますね", 18],
+    ["Giá đặc biệt này cần trưởng phòng duyệt ạ.", "この特別価格は部長の承認が必要です", 18],
+    ["Phòng kinh doanh và phòng kỹ thuật sẽ phối hợp với nhau ạ.", "営業部と技術部が連携します", 18],
+    ["Em bàn giao khách hàng miền Bắc cho đồng nghiệp ở Hà Nội ạ.", "北部のお客様はハノイの同僚に引き継ぎます", 18],
+    ["Tuần sau em nghỉ phép, có gì anh liên hệ đồng nghiệp em nghen.", "来週は休暇なので、何かあれば同僚に連絡してくださいね", 18],
+    ["Hôm nay em phải tăng ca để kịp gửi báo cáo ạ.", "今日は報告書の送付に間に合わせるため残業します", 18],
+    ["Sếp phân công em phụ trách dự án này ạ.", "上司から、このプロジェクトの担当を任されました", 18],
+    ["Anh liên hệ kế toán giùm em để kiểm tra hóa đơn nghen.", "請求書の確認は経理に連絡してくださいね", 18],
+    ["Em sẽ theo dõi tiến độ và cập nhật cho anh mỗi tuần ạ.", "進捗を追って、毎週ご報告します", 18],
+    ["Bên em đề nghị tiến hành thử nghiệm vào thứ hai tuần sau ạ.", "来週の月曜に試験を実施することをご提案します", 18]
   ],
   words: [
     ["báo giá", "見積"], ["đơn hàng", "注文"], ["đặt hàng", "発注する"], ["mẫu", "サンプル"],
@@ -765,10 +700,19 @@ const DATA = {
     ["chất lượng", "品質", 17], ["hiệu quả", "効果・効率", 17], ["tiết kiệm", "節約する", 17],
     ["đáng tin cậy", "信頼できる", 17], ["hài lòng", "満足する", 17], ["lâu dài", "長期の", 17],
     ["quan hệ", "関係", 17], ["khu vực", "地域・エリア", 17], ["toàn quốc", "全国", 17],
-    ["quốc tế", "国際", 17]
+    ["quốc tế", "国際", 17],
+    ["đồng nghiệp", "同僚", 18], ["cấp trên", "上司", 18], ["cấp dưới", "部下", 18],
+    ["sếp", "上司・ボス(口語)", 18], ["phân công", "割り当てる・分担", 18], ["giao việc", "仕事を任せる", 18],
+    ["phụ trách", "担当する", 18], ["xin ý kiến", "意見を求める・相談する", 18], ["duyệt", "承認する", 18],
+    ["đề nghị", "提案・依頼する", 18], ["phối hợp", "連携する", 18], ["bàn giao", "引き継ぐ", 18],
+    ["nghỉ phép", "休暇を取る", 18], ["tăng ca", "残業する", 18], ["nội bộ", "社内・内部", 18],
+    ["trưởng phòng", "部長・課長", 18], ["phòng kinh doanh", "営業部", 18], ["phòng kỹ thuật", "技術部", 18],
+    ["kế toán", "経理", 18], ["nhân sự", "人事", 18], ["công việc", "仕事", 18],
+    ["nhiệm vụ", "任務・タスク", 18], ["kịp", "間に合う", 18], ["tiến hành", "実施する・進める", 18],
+    ["theo dõi", "追う・フォローする", 18]
   ]
 };
-const ETY = {"báo giá": ["báo=報 + giá=価", "報価=「価格を知らせる」→見積。中国語の報価と同じ作り。"], "đơn hàng": ["đơn=単 + hàng=行", "単=伝票。行は ngân hàng(銀行)の行で、店→商品の意味に。商品の伝票→注文。"], "đặt hàng": ["đặt=置く・予約する(固有語) + hàng=行(商品)", "商品を置く(予約する)→発注する。"], "mẫu": ["mẫu=見本・型(漢字は母とする説があるが不確か)"], "thử nghiệm": ["thử=試 + nghiệm=験", "試験。日本語と同じ。"], "chứng nhận": ["chứng=証 + nhận=認", "証認=認証。日本語と語順が逆。"], "quy chuẩn": ["quy=規 + chuẩn=準", "規準。決まりとしての基準→技術基準。"], "tiêu chuẩn": ["tiêu=標 + chuẩn=準", "標準。標準として定めたもの→規格。"], "báo cáo": ["báo=報 + cáo=告", "報告。日本語と同じ。"], "thời gian giao hàng": ["thời gian=時間 + giao=交 + hàng=行(商品)", "交=渡す。「商品を渡す時間」→納期。"], "lịch": ["lịch=暦", "暦=カレンダー→スケジュール。"], "hồ sơ": ["hồ sơ=書類一式(語源は不確か)"], "xác nhận": ["xác=確 + nhận=認", "確認。日本語と同じ。"], "chi phí": ["chi=支 + phí=費", "支費=支払う費用→費用。"], "khách hàng": ["khách=客 + hàng=行", "行=店・商い。店の客→お客さん(取引先)。"], "hợp đồng": ["hợp=合 + đồng=同", "合同=合わせて同じにする→契約。日本語の「合同」と同じ字。"], "thanh toán": ["thanh=清 + toán=算", "清算=お金を清めて計算→支払い。"], "hóa đơn": ["hóa=貨 + đơn=単", "貨単=商品の伝票→請求書。"], "phòng thí nghiệm": ["phòng=房 + thí=試 + nghiệm=験", "房=部屋。「試験の部屋」→試験所。"], "sản phẩm": ["sản=産 + phẩm=品", "産品→製品。"], "nói lại": ["固有語", "nói=言う、lại=再び。"], "chậm lại": ["固有語", "chậm=遅い、lại=再び・元に。"], "hiểu": ["hiểu=暁", "暁=夜が明ける→分かる、理解する。"], "không hiểu": ["không=不(否定) + hiểu=暁", "không=空・否定。「理解しない」。"], "cuộc họp": ["cuộc=局(古い借用) + họp=集まる", "局=一つの場。集まる場→会議。"], "đề xuất": ["đề=提 + xuất=出", "提出。中国語では「提案する」の意味。"], "yêu cầu": ["yêu=要 + cầu=求", "要求。日本語と同じ。"], "vấn đề": ["vấn=問 + đề=題", "問題。日本語と同じ。"], "giải pháp": ["giải=解 + pháp=法", "解法→解決策。"], "hạn chót": ["hạn=限 + chót=最後(固有語)", "「限りの最後」→締め切り。"], "trễ": ["固有語"], "gấp": ["固有語"], "giá": ["giá=価", "価。価格。"], "giảm giá": ["giảm=減 + giá=価", "減価→値引き。"], "tổng cộng": ["tổng=総 + cộng=共", "総共→合計。"], "đã bao gồm": ["đã=〜済み(固有語) + bao=包 + gồm=含む(固有語)", "「包んで含む」→含まれている。"], "chưa bao gồm": ["chưa=まだ〜ない(固有語) + bao=包 + gồm=含む(固有語)", "含まれていない。"], "kết quả": ["kết=結 + quả=果", "結果。日本語と同じ。"], "đạt": ["đạt=達", "達する→合格・適合。"], "không đạt": ["không=不(否定) + đạt=達", "達しない→不合格。"], "tài liệu": ["tài=材 + liệu=料", "材料→資料。"], "thiết bị": ["thiết=設 + bị=備", "設備→機器。"], "nhà sản xuất": ["nhà=家(固有語) + sản=産 + xuất=出", "産出する家→メーカー。"], "nhập khẩu": ["nhập=入 + khẩu=口", "入口。荷物が入る口→輸入。"], "nhãn": ["nhãn=ラベル(語源は不確か)"], "chứng nhận hợp quy": ["chứng nhận=認証 + hợp=合 + quy=規", "合規=規則に合う→適合認証。"], "công bố hợp quy": ["công=公 + bố=布 + hợp=合 + quy=規", "公布=広く知らせる。「規則に合うと公表」→適合宣言。"], "thông số kỹ thuật": ["thông=通 + số=数 + kỹ=技 + thuật=術", "技術+通じる数値→技術仕様。"], "hạng mục": ["hạng=項 + mục=目", "項目。日本語と同じ。"], "dự án": ["dự=予 + án=案", "予案→プロジェクト(計画案)。"], "thuế VAT": ["thuế=税", "税。VATは付加価値税(消費税)。"], "biên bản cuộc họp": ["biên=編 + bản=本 + cuộc họp=会議", "編本=まとめて書いた記録→議事録。熟語はベトナム独自。"], "lịch họp": ["lịch=暦 + họp=集まる(固有語)", "会議のカレンダー→会議の予定。"], "hôm nay": ["固有語", "hôm=日、nay=今。"], "ngày mai": ["固有語", "ngày=日、mai=翌。"], "tuần sau": ["tuần=旬 + sau=後(固有語)", "旬=10日→7日の週。"], "tuần này": ["tuần=旬 + này=この(固有語)"], "tháng sau": ["固有語(月の漢越語は nguyệt)", "tháng=月、sau=後。"], "buổi sáng": ["固有語", "buổi=時間帯、sáng=朝・明るい。"], "buổi chiều": ["固有語", "buổi=時間帯、chiều=午後。"], "giờ": ["giờ=時(古い時代の借用)", "時=時間。今の漢越語の読みは thời(thời gian=時間)。"], "phút": ["固有語(分の漢越語は phân)"], "bắt đầu": ["bắt=捕まえる(固有語) + đầu=頭", "頭をつかむ→始める。đầu は頭の漢越語。"], "kết thúc": ["kết=結 + thúc=束", "結束→終わる。"], "tiếp tục": ["tiếp=接 + tục=続", "接続→続ける。"], "đồng ý": ["đồng=同 + ý=意", "同意。日本語と同じ。"], "không đồng ý": ["không=不(否定) + đồng=同 + ý=意", "不同意。"], "đúng rồi": ["固有語", "đúng=正しい、rồi=済み。"], "chắc chắn": ["固有語"], "có thể": ["có=ある(固有語) + thể=体", "体=やり方・形。「やり方がある」→できる。"], "không thể": ["không=否定 + có thể", "できない。"], "cần": ["固有語"], "biết": ["固有語"], "chưa biết": ["固有語", "chưa=まだ〜ない、biết=知る。"], "hỏi": ["固有語"], "trả lời": ["固有語", "trả=返す、lời=言葉。"], "quan trọng": ["quan=関 + trọng=重", "関わりが重い→重要。日本語は「重要」。"], "không": ["không=空", "空=から→ゼロ。否定の「ない」にも使う。"], "một": ["固有語(一の漢越語は nhất)", "nhất=一。例: nhất định=一定。"], "hai": ["固有語(二の漢越語は nhị)", "nhị=二。"], "ba": ["固有語(三の漢越語は tam)", "tam=三。例: tam giác=三角。"], "bốn": ["固有語(四の漢越語は tứ)", "tứ=四。"], "năm": ["固有語(五の漢越語は ngũ)", "ngũ=五。年は niên。"], "sáu": ["固有語(六の漢越語は lục)", "lục=六。"], "bảy": ["固有語(七の漢越語は thất)", "thất=七。"], "tám": ["固有語(八の漢越語は bát)", "bát=八。"], "chín": ["固有語(九の漢越語は cửu)", "cửu=九。"], "mười": ["固有語(十の漢越語は thập)", "thập=十。"], "trăm": ["固有語(百の漢越語は bách)", "bách=百。例: bách hóa=百貨。"], "ngàn": ["固有語(千の漢越語は thiên)", "thiên=千。"], "triệu": ["triệu=兆", "兆。ただし日本語の兆(1兆)とは違い、triệu=100万。"], "đồng": ["đồng=銅", "銅。昔の銅貨→通貨の「ドン」。"], "đô la": ["外来語(ドル)"], "bao nhiêu": ["固有語"], "số lượng": ["số=数 + lượng=量", "数量。日本語と同じ。"], "đơn giá": ["đơn=単 + giá=価", "単価。日本語と同じ。"], "mỗi": ["mỗi=毎", "毎。毎日、毎回の「毎」。"], "cái": ["固有語", "物を数える助数詞。"], "bộ": ["bộ=部", "部→セット(一組)。"], "tăng": ["tăng=増", "増。増える。"], "giảm": ["giảm=減", "減。減る。"], "khoảng": ["固有語"], "email": ["外来語(メール)"], "gửi": ["gửi=寄(古い時代の借用・推定)", "寄せる→送る。今の漢越語の読みは ký。"], "nhận": ["nhận=認", "認める→受け取る。chứng nhận の nhận と同じ。"], "đính kèm": ["đính=訂 + kèm=添える(固有語)", "訂=綴じる(中国語の装訂)。綴じて添える→添付する。"], "tệp đính kèm": ["固有語(tệp=ファイル) + đính kèm=添付"], "phản hồi": ["phản=反 + hồi=回", "反回→返ってくる→返信。"], "điện thoại": ["điện=電 + thoại=話", "電話。日本語と同じ。"], "gọi": ["固有語"], "số điện thoại": ["số=数・番号 + điện thoại=電話", "電話番号。"], "liên hệ": ["liên=連 + hệ=係・系", "連係(連繋)→連絡する。"], "bận": ["固有語"], "rảnh": ["固有語"], "chờ": ["固有語"], "một chút": ["固有語(một=1、chút=少し)"], "xin lỗi": ["固有語", "xin=請う、lỗi=誤り・過ち。"], "cảm ơn": ["cảm=感 + ơn=恩", "感恩→恩に感謝→ありがとう。"], "không sao": ["固有語", "không=ない、sao=どうして→問題ない。"], "địa chỉ": ["địa=地 + chỉ=址", "地址→住所。"], "kiểm tra": ["kiểm=検 + tra=査", "検査→確認する。"], "sửa": ["固有語"], "cập nhật": ["cập=及 + nhật=日", "日付に及ぶ(追いつく)→最新にする→更新。ベトナム独自の熟語。"], "phiên bản": ["phiên=翻 + bản=版", "翻版=版を作り直したもの→バージョン。phiên dịch=翻訳 の phiên。"], "trước": ["固有語(前の漢越語は tiền)"], "sau": ["固有語(後の漢越語は hậu)"], "tiếp theo": ["tiếp=接 + theo=従う(固有語)", "続いて→次の。"], "vì": ["vì=為", "為→〜のために・〜だから。"], "nên": ["固有語"], "cho nên": ["固有語", "cho=〜に、nên=〜なので。"], "nhưng": ["固有語"], "tuy nhiên": ["tuy=雖 + nhiên=然", "雖然=〜ではあるが。"], "nếu": ["固有語"], "thì": ["thì=時(推定)", "時→「〜のときは」→〜なら。文法語としての由来は確定していない。"], "hoặc": ["hoặc=或", "或。或いは。"], "và": ["固有語"], "với": ["固有語"], "cũng": ["固有語"], "đã": ["固有語"], "đang": ["固有語"], "sẽ": ["固有語"], "chưa": ["固有語"], "rồi": ["固有語"], "vẫn": ["固有語"], "rất": ["固有語"], "hơi": ["固有語"], "lắm": ["固有語"], "thêm": ["固有語"], "nữa": ["固有語"], "ví dụ": ["ví=譬(thí の口語形) + dụ=喩", "譬喩=たとえ→例えば。書き言葉では thí dụ とも言う。"], "lý do": ["lý=理 + do=由", "理由。日本語と同じ。"], "ý kiến": ["ý=意 + kiến=見", "意見。日本語と同じ。"], "đăng ký": ["đăng=登 + ký=記", "登記→登録。"], "nộp": ["nộp=納", "納める→提出する。"], "phê duyệt": ["phê=批 + duyệt=閲", "批閲=目を通して可否を決める→承認。"], "cấp": ["cấp=給", "給→与える→発行する。"], "giấy chứng nhận": ["giấy=紙(古い時代の借用) + chứng nhận=認証", "認証の紙→認証書。"], "hiệu lực": ["hiệu=効 + lực=力", "効力。日本語と同じ。"], "hết hạn": ["hết=尽きる(固有語) + hạn=限", "限りが尽きる→期限切れ。"], "gia hạn": ["gia=加 + hạn=限", "加限→期限を加える→延長。"], "quy trình": ["quy=規 + trình=程", "規程→手順・プロセス。"], "bước": ["固有語"], "giai đoạn": ["giai=階 + đoạn=段", "階段→段階。日本語と逆順。"], "tiến độ": ["tiến=進 + độ=度", "進度→進捗。"], "hoàn thành": ["hoàn=完 + thành=成", "完成→完了する。"], "xử lý": ["xử=処 + lý=理", "処理。日本語と同じ。"], "đủ": ["固有語"], "thiếu": ["thiếu=少", "少ない→不足。thiếu niên=少年 の thiếu。"], "sai": ["固有語"], "chính xác": ["chính=正 + xác=確", "正確。日本語と同じ。"], "lỗi": ["固有語"], "cải thiện": ["cải=改 + thiện=善", "改善。日本語と同じ。"], "thay đổi": ["固有語", "thay=替える、đổi=換える。"], "cơ quan quản lý": ["cơ quan=機関 + quản=管 + lý=理", "管理機関→規制当局。"], "phí": ["phí=費", "費。手数料・費用。"], "mã sản phẩm": ["mã=碼(コード) + sản phẩm=産品", "碼=数字や記号→コード。"], "mẫu thử": ["mẫu=見本 + thử=試", "試す見本→試験用サンプル。"], "tương thích điện từ": ["tương=相 + thích=適 + điện từ=電磁", "相適+電磁→電磁両立性(EMC)。"], "an toàn": ["an=安 + toàn=全", "安全。日本語と同じ。"], "sóng vô tuyến": ["sóng=波(固有語) + vô=無 + tuyến=線", "無線の波→無線(RF)。"], "đo": ["固有語(語源は不確か)"], "máy đo": ["máy=機(古い時代の借用・推定) + đo=測る(固有語)", "測る機械→測定器。"], "hiệu chuẩn": ["hiệu=校 + chuẩn=準", "校準→校正。"], "chuẩn bị": ["chuẩn=準 + bị=備", "準備。日本語と同じ。"], "đóng gói": ["固有語", "đóng=閉じる、gói=包む。"], "vận chuyển": ["vận=運 + chuyển=転", "運転→運んで動かす→輸送する。"], "hải quan": ["hải=海 + quan=関", "海関→税関。"], "ưu tiên": ["ưu=優 + tiên=先", "優先。日本語と同じ。"], "nhanh": ["固有語"], "bình thường": ["bình=平 + thường=常", "平常→通常。"], "bắt buộc": ["固有語", "bắt=捕まえる、buộc=縛る→強制→必須。"], "tùy vào": ["tùy=随", "随→〜に従う→〜次第。"], "pin": ["外来語(フランス語 pile)"], "nguồn điện": ["nguồn=源(固有語) + điện=電", "電気の源→電源。"], "điện áp": ["điện=電 + áp=圧", "電圧。"], "không dây": ["không=空(否定) + dây=線・ひも(固有語)", "線がない→ワイヤレス。"], "cấu hình": ["cấu=構 + hình=形", "構形→構成・設定。"], "phần mềm": ["phần=分 + mềm=柔らかい(固有語)", "柔らかい部分→ソフトウェア。phần trăm=パーセント の phần。"], "bản sao": ["bản=本 + sao=抄", "抄=書き写す。写した本→コピー。"], "bản gốc": ["bản=本 + gốc=根・元(固有語)", "元の本→原本。"], "chữ ký": ["chữ=字(古い時代の借用) + ký=記", "字を記す→署名。ký giả=記者 の ký。"], "thị trường": ["thị=市 + trường=場", "市場。日本語と同じ。"], "thảo luận": ["thảo=討 + luận=論", "討論→話し合う。"], "giải thích": ["giải=解 + thích=釈", "解釈→説明する。"], "tóm tắt": ["固有語", "tóm=つまむ、tắt=短くする→要約。"], "nhắc lại": ["固有語", "nhắc=思い出させる、lại=再び。"], "mục tiêu": ["mục=目 + tiêu=標", "目標。日本語と同じ。"], "kế hoạch": ["kế=計 + hoạch=画", "計画。日本語と同じ。"], "quyết định": ["quyết=決 + định=定", "決定。日本語と同じ。"], "lựa chọn": ["固有語", "lựa=選ぶ、chọn=選ぶ。"], "khó": ["固有語"], "dễ": ["dễ=易(古い時代の借用・推定)", "易しい。今の漢越語の読みは dị。"], "khả năng": ["khả=可 + năng=能", "可能(性)・能力。"], "cơ hội": ["cơ=機 + hội=会", "機会。日本語と同じ。"], "rủi ro": ["固有語"], "ngân sách": ["ngân=銀 + sách=冊", "銀の帳簿→予算。"], "so sánh": ["固有語", "so=比べる、sánh=並べる。"], "đối tác": ["đối=対 + tác=作", "向き合って一緒に作る相手→パートナー。hợp tác=協力 の tác。"], "người phụ trách": ["người=人(固有語) + phụ=負 + trách=責", "負責=責任を負う→担当者。"], "bộ phận": ["bộ=部 + phận=分", "部分→部署。"], "giám đốc": ["giám=監 + đốc=督", "監督→トップ(社長・部長)。"], "nhân viên": ["nhân=人 + viên=員", "人員→社員。"], "thương lượng": ["thương=商 + lượng=量", "商量→相談して決める→交渉。"], "thỏa thuận": ["thỏa=妥 + thuận=順", "妥協+順→合意。"], "điều kiện": ["điều=条 + kiện=件", "条件。日本語と同じ。"], "hỗ trợ": ["hỗ=互 + trợ=助", "互助→サポート。"], "hợp tác": ["hợp=合 + tác=作", "合作→協力。"], "nghĩa là": ["nghĩa=義 + là=〜である(固有語)", "義(意味)は〜である。"], "tức là": ["tức=即 + là=〜である(固有語)", "即ち→すなわち。"], "cụ thể": ["cụ=具 + thể=体", "具体。日本語と同じ。"], "đại khái": ["đại=大 + khái=概", "大概→だいたい。"], "chi tiết": ["chi=支 + tiết=節", "支節→細かい点→詳細。"], "điểm chính": ["điểm=点 + chính=正(主)", "点+主要→主なポイント。"], "xin phép": ["xin=請う(固有語) + phép=法", "法→許可。「許可を請う」→〜させていただく。"], "đầu tiên": ["đầu=頭 + tiên=先", "頭+先→最初に。"], "cuối cùng": ["固有語", "cuối=終わり、cùng=最後。"], "thật ra": ["thật=実(thực の口語形) + ra=出る(固有語)", "実が出る→実は。"], "dĩ nhiên": ["dĩ=已 + nhiên=然", "已然=すでにそうである→もちろん。"], "có lẽ": ["có=ある(固有語) + lẽ=理(lý の口語形)", "道理がある→たぶん。"], "chắc là": ["固有語"], "thường": ["thường=常", "常→普段。"], "luôn luôn": ["固有語"], "đôi khi": ["固有語", "đôi=対・いくつか、khi=とき。"], "ngoài ra": ["固有語(外の漢越語は ngoại)", "ngoài=外、ra=出る。"], "mặc dù": ["固有語"], "do đó": ["do=由 + đó=それ(固有語)", "それに由る→したがって。"], "yên tâm": ["yên=安 + tâm=心", "安心。日本語と同じ。"], "rõ ràng": ["固有語"], "phức tạp": ["phức=複 + tạp=雑", "複雑。日本語と同じ。"], "đơn giản": ["đơn=単 + giản=簡", "単簡→簡単。日本語と逆順。"], "hiểu lầm": ["hiểu=暁(分かる) + lầm=誤る(固有語)", "誤って分かる→誤解。"], "thắc mắc": ["固有語"], "thời tiết": ["thời=時 + tiết=節", "時節→天気。"], "nóng": ["固有語"], "mát": ["固有語"], "mưa": ["固有語"], "kẹt xe": ["kẹt=詰まる(固有語) + xe=車(古い時代の借用)", "車が詰まる→渋滞。"], "cuối tuần": ["cuối=終わり(固有語) + tuần=旬", "週の終わり→週末。"], "gia đình": ["gia=家 + đình=庭", "家庭→家族。"], "ăn": ["固有語"], "uống": ["固有語"], "cà phê": ["外来語(フランス語 café)"], "ăn trưa": ["固有語", "ăn=食べる、trưa=昼。"], "ngon": ["固有語"], "nhà hàng": ["nhà=家(固有語) + hàng=行", "商いの家→レストラン。"], "mời": ["固有語"], "quán": ["quán=館", "館→お店・食堂。"], "nhậu": ["固有語"], "dô": ["固有語", "乾杯の掛け声。"], "no": ["固有語"], "đói": ["固有語"], "khỏe": ["固有語"], "mệt": ["固有語"], "vui": ["固有語"], "miền Nam": ["miền=地方(固有語) + Nam=南", "南。ベトナム語で Nam=南、Bắc=北。"], "quen": ["quen=慣(古い時代の借用・推定)", "慣れる。今の漢越語の読みは quán。"], "thích": ["固有語"], "thứ hai": ["thứ=次 + hai=2", "次の(第)2番目→月曜日。"], "thứ ba": ["thứ=次 + ba=3", "第3→火曜日。"], "thứ tư": ["thứ=次 + tư=4", "第4→水曜日。tư は四の別の言い方。"], "thứ năm": ["thứ=次 + năm=5", "第5→木曜日。"], "thứ sáu": ["thứ=次 + sáu=6", "第6→金曜日。"], "thứ bảy": ["thứ=次 + bảy=7", "第7→土曜日。"], "chủ nhật": ["chủ=主 + nhật=日", "主日→日曜日。"], "ngày": ["固有語(日の漢越語は nhật)"], "tuần": ["tuần=旬", "旬=10日→7日の週。"], "tháng": ["固有語(月の漢越語は nguyệt)"], "năm nay": ["固有語", "năm=年、nay=今。"], "hôm qua": ["固有語", "hôm=日、qua=過ぎた。"], "buổi tối": ["固有語", "buổi=時間帯、tối=夜。"], "buổi trưa": ["固有語", "buổi=時間帯、trưa=昼。"], "đầu tháng": ["đầu=頭 + tháng=月(固有語)", "月の頭→月初。"], "cuối tháng": ["固有語", "cuối=終わり、tháng=月。"], "ngày nghỉ": ["固有語", "ngày=日、nghỉ=休む。"], "ngày lễ": ["ngày=日(固有語) + lễ=礼", "礼の日→祝日。"], "sớm": ["固有語"], "muộn": ["muộn=晩(古い時代の借用・推定)", "晩=遅い。今の漢越語の読みは vãn。"], "đúng giờ": ["固有語", "đúng=正しい、giờ=時間。"], "thời hạn": ["thời=時 + hạn=限", "時限→期限。"], "mỗi ngày": ["mỗi=毎 + ngày=日(固有語)", "毎日。"], "mỗi tuần": ["mỗi=毎 + tuần=旬", "毎週。"], "lịch làm việc": ["lịch=暦 + làm việc=働く(固有語)", "仕事の暦→スケジュール。"], "trực tuyến": ["trực=直 + tuyến=線", "直線→「直接つながった線」→オンライン。日本語の「直結」に近い発想。"], "đường truyền": ["đường=道(固有語) + truyền=伝", "道+伝→「データが伝わる道」→回線・通信。"], "mạng": ["固有語"], "âm thanh": ["âm=音 + thanh=声", "音声。日本語と同じ。"], "chia sẻ màn hình": ["chia sẻ=分け合う(固有語) + màn=幔(幕) + hình=形", "幕に映る形→画面。分け合う+画面→画面共有。"], "micro": ["外来語(マイク)"], "tắt tiếng": ["固有語", "tắt=消す、tiếng=音。"], "bật": ["固有語"], "tắt": ["固有語"], "kết nối": ["kết=結 + nối=つなぐ(固有語)", "結ぶ+つなぐ→接続。"], "mất kết nối": ["mất=失う(固有語) + kết nối=接続", "接続を失う→切れる。"], "đăng nhập": ["đăng=登 + nhập=入", "登入→ログインする。"], "đường link": ["đường=道(固有語) + link=外来語", "リンク。"], "mật khẩu": ["mật=密 + khẩu=口", "秘密の口(言葉)→合言葉→パスワード。khẩu=口 は nhập khẩu(輸入)と同じ。"], "gọi lại": ["固有語", "gọi=呼ぶ・かける、lại=再び。"], "nhắn tin": ["nhắn=伝える(固有語) + tin=信", "信=便り→メッセージを送る。"], "tin nhắn": ["tin=信 + nhắn=伝える(固有語)", "便りを伝える→メッセージ。"], "lời nhắn": ["固有語", "lời=言葉、nhắn=伝える。"], "sóng yếu": ["固有語", "sóng=波、yếu=弱い。"], "nghe rõ": ["固有語", "nghe=聞く、rõ=はっきり。"], "nghe không rõ": ["固有語", "nghe=聞く、không rõ=はっきりしない。"], "mở": ["固有語"], "đóng": ["固有語"], "tải về": ["tải=載 + về=戻る(固有語)", "載せる→手元に載せてくる→ダウンロード。"], "ồn": ["固有語"], "chuyển khoản": ["chuyển=転 + khoản=款", "款=お金の項目。お金を移す→振込。"], "tiền mặt": ["tiền=銭 + mặt=顔・面(固有語)", "表に出ているお金→現金。"], "đặt cọc": ["固有語", "đặt=置く、cọc=杭→杭を打って押さえる→手付金。"], "trả trước": ["固有語", "trả=払う・返す、trước=前。"], "trả sau": ["固有語", "trả=払う・返す、sau=後。"], "công nợ": ["công=公 + nợ=借り(固有語)", "帳簿に載った借り→未払い残高。"], "hạn thanh toán": ["hạn=限 + thanh toán=清算", "支払いの限り→支払期限。"], "chiết khấu": ["chiết=折 + khấu=扣", "折扣=値引き。中国語の「打折」と同じ発想。"], "ưu đãi": ["ưu=優 + đãi=待", "優待。日本語と同じ。"], "khuyến mãi": ["khuyến=勧 + mãi=売", "売るのを勧める→販促・キャンペーン。"], "báo giá lại": ["báo giá=報価 + lại=再び(固有語)", "もう一度見積→再見積。"], "xuất hóa đơn": ["xuất=出 + hóa đơn=貨単", "請求書を出す→発行する。"], "hóa đơn đỏ": ["hóa đơn=貨単 + đỏ=赤(固有語)", "昔のVATインボイスが赤い紙だった名残。"], "tài khoản ngân hàng": ["tài=財 + khoản=款 + ngân hàng=銀行", "財の項目→口座。"], "ngân hàng": ["ngân=銀 + hàng=行", "銀行。日本語と同じ。"], "số tài khoản": ["số=数 + tài khoản=口座", "口座の番号。"], "tạm ứng": ["tạm=暫 + ứng=応", "暫く立て替える→仮払い。"], "hoàn tiền": ["hoàn=還 + tiền=銭", "お金を還す→返金。"], "phát sinh": ["phát=発 + sinh=生", "発生。日本語と同じ。"], "trọn gói": ["固有語", "trọn=まるごと、gói=包み→一括。"], "điều khoản": ["điều=条 + khoản=款", "条款→条項。"], "ký hợp đồng": ["ký=記(署名) + hợp đồng=合同(契約)", "契約に署名する→契約を結ぶ。"], "thanh lý hợp đồng": ["thanh=清 + lý=理 + hợp đồng=契約", "清理=片付ける→契約の清算・終了。"], "tỷ giá": ["tỷ=比 + giá=価", "比価=比べた価格→為替レート。"], "giá cuối": ["giá=価 + cuối=最後(固有語)", "最後の価格→最終価格。"], "kích thước": ["kích(語源は不確か) + thước=尺(古い時代の借用)", "尺=長さを測るもの→寸法。"], "trọng lượng": ["trọng=重 + lượng=量", "重量。日本語と同じ。"], "nhiệt độ": ["nhiệt=熱 + độ=度", "熱度→温度。"], "độ ẩm": ["độ=度 + ẩm=湿る(推定)", "湿り具合の度→湿度。"], "công suất": ["công=功 + suất=率", "功率=出力・電力。中国語の「功率」と同じ。"], "tần số": ["tần=頻 + số=数", "頻数=繰り返す回数→周波数。"], "dòng điện": ["dòng=流れ(固有語) + điện=電", "電気の流れ→電流。"], "điện trở": ["điện=電 + trở=阻", "電阻=電気を阻む→抵抗。中国語の「电阻」と同じ。"], "dải tần": ["dải=帯(固有語) + tần=頻", "周波数の帯→周波数帯。"], "ăng-ten": ["外来語(フランス語 antenne)", ""], "bộ sạc": ["bộ=部 + sạc=充電(外来語・フランス語 charger)", "充電する一式→充電器。"], "sạc": ["外来語(フランス語 charger)", ""], "cổng": ["固有語", "門→ポート・端子。cổng USB=USBポート。"], "vỏ": ["固有語", "殻・皮→筐体。"], "linh kiện": ["linh=零 + kiện=件", "零件=部品。中国語の「零件」と同じ。"], "bo mạch": ["bo=外来語(board) + mạch=脈", "脈=回路(mạch điện=電気回路)。回路の板→基板。"], "nhiễu": ["nhiễu=擾", "擾=乱す→ノイズ・妨害。"], "phát xạ": ["phát=発 + xạ=射", "発射→放射(エミッション)。"], "miễn nhiễm": ["miễn=免 + nhiễm=染", "染まるのを免れる→イミュニティ。免疫と同じ発想。"], "giới hạn": ["giới=界 + hạn=限", "界限→限度・制限。"], "vượt": ["固有語", ""], "sai số": ["sai=違い(固有語) + số=数", "違った数→誤差。"], "đơn vị": ["đơn=単 + vị=位", "単位。日本語と同じ。"], "kiểu máy": ["kiểu=型(語源は不確か) + máy=機(古い借用・推定)", "機械の型→機種。"], "hướng dẫn sử dụng": ["hướng=向 + dẫn=引 + sử=使 + dụng=用", "向引=案内。使用の案内→取扱説明書。"], "hợp chuẩn": ["hợp=合 + chuẩn=準", "規格(標準)に合う→規格適合。hợp quy(規則に合う)と対になる言葉。"], "kiểm định": ["kiểm=検 + định=定", "検定。日本語と同じ。"], "giám định": ["giám=鑑 + định=定", "鑑定。日本語と同じ。"], "tổ chức chứng nhận": ["tổ chức=組織 + chứng nhận=認証", "認証する組織→認証機関。"], "công nhận": ["công=公 + nhận=認", "公認→認定。"], "chỉ định": ["chỉ=指 + định=定", "指定。日本語と同じ。"], "dấu hợp quy": ["dấu=印(固有語) + hợp=合 + quy=規", "規則に合う印→適合マーク。"], "lô hàng": ["lô=ロット(外来語・フランス語 lot) + hàng=行(商品)", "商品のロット→貨物。"], "kiểm tra nhà nước": ["kiểm tra=検査 + nhà nước=国家(固有語)", "nhà=家、nước=国→国家。国の検査。"], "thông quan": ["thông=通 + quan=関", "通関。日本語と同じ。"], "tờ khai": ["tờ=紙1枚(固有語) + khai=開", "開=申し出る(khai báo=申告)。申告の紙→申告書。"], "mẫu điển hình": ["mẫu=見本 + điển=典 + hình=型", "典型的な見本→代表サンプル。"], "phương thức": ["phương=方 + thức=式", "方式。日本語と同じ。"], "đánh giá": ["đánh=打つ(固有語) + giá=価", "価値を付ける→評価する。"], "nhà máy": ["固有語", "nhà=建物、máy=機械→工場。"], "giấy phép": ["giấy=紙(古い借用) + phép=法", "法=許可。許可の紙→許可証。"], "miễn kiểm tra": ["miễn=免 + kiểm tra=検査", "検査を免れる→検査免除。"], "thông tư": ["thông=通 + tư=咨", "咨=問い合わせ・通知。省が出す通知→通達(省令)。"], "nghị định": ["nghị=議 + định=定", "議定→政府の政令。"], "văn bản": ["văn=文 + bản=本", "文本→文書。"], "quy định": ["quy=規 + định=定", "規定。日本語と同じ。"], "áp dụng": ["áp=押(推定) + dụng=用", "当てて用いる→適用する。"], "hiện hành": ["hiện=現 + hành=行", "現行。日本語と同じ。"], "sửa đổi": ["固有語", "sửa=直す、đổi=変える→改正する。"], "bổ sung": ["bổ=補 + sung=充", "補充→追加・補足。"], "khiếu nại": ["khiếu=叫 + nại(漢字は不確か)", "叫ぶ→訴える→苦情を申し立てる。"], "phàn nàn": ["固有語", ""], "sự cố": ["sự=事 + cố=故", "事故→トラブル。"], "hư hỏng": ["固有語", "hư=壊れる(南部でよく使う)、hỏng=故障する。"], "bể": ["固有語", "南部の言い方。北部は vỡ。"], "trầy": ["固有語", ""], "thất lạc": ["thất=失 + lạc=落", "失落→なくす→紛失する。"], "đền bù": ["固有語", "đền=償う、bù=埋め合わせる。"], "bồi thường": ["bồi=賠 + thường=償", "賠償。日本語と同じ。"], "chịu trách nhiệm": ["chịu=受ける(固有語) + trách=責 + nhiệm=任", "責任を受ける→責任を負う。"], "nguyên nhân": ["nguyên=原 + nhân=因", "原因。日本語と同じ。"], "khắc phục": ["khắc=克 + phục=服", "克服→問題を乗り越える→是正する。"], "biện pháp": ["biện=弁(辦) + pháp=法", "辦法=やり方→対策。中国語の「办法」と同じ。"], "tái diễn": ["tái=再 + diễn=演", "再び演じる→再発する。"], "điều tra": ["điều=調 + tra=査", "調査。日本語と同じ。"], "thành thật": ["thành=誠 + thật=実", "誠実→誠に。"], "thông cảm": ["thông=通 + cảm=感", "気持ちが通じる→理解する・大目に見る。"], "kiên nhẫn": ["kiên=堅 + nhẫn=忍", "堅忍→辛抱する。"], "nghiêm trọng": ["nghiêm=厳 + trọng=重", "厳重→深刻・重大。"], "khẩn cấp": ["khẩn=緊 + cấp=急", "緊急。日本語と同じ。"], "tạm thời": ["tạm=暫 + thời=時", "暫時→一時的。"], "triệt để": ["triệt=徹 + để=底", "徹底。日本語と同じ。"], "đổi trả": ["固有語", "đổi=換える、trả=返す→交換・返品。"], "bảo hành": ["bảo=保 + hành=行", "保って行う→保証(アフターサービス)。"], "lặp lại": ["固有語", "lặp=重ねる、lại=再び→繰り返す。"], "giới thiệu": ["giới=介 + thiệu=紹", "介紹=紹介。日本語と語順が逆。"], "thành lập": ["thành=成 + lập=立", "成立→会社を立てる→設立する。"], "trụ sở": ["trụ=住 + sở=所", "住所。ただし意味は日本語の住所ではなく「本社・所在地」。"], "chi nhánh": ["chi=支 + nhánh=枝(固有語)", "支える枝→支店。"], "văn phòng": ["văn=文 + phòng=房", "文房=書き物をする部屋→事務所。"], "năng lực": ["năng=能 + lực=力", "能力。日本語と同じ。"], "kinh nghiệm": ["kinh=経 + nghiệm=験", "経験。日本語と同じ。"], "uy tín": ["uy=威 + tín=信", "威信→信用・評判。"], "chuyên nghiệp": ["chuyên=専 + nghiệp=業", "専業→プロの。"], "dịch vụ": ["dịch=役 + vụ=務", "役務→サービス。"], "lĩnh vực": ["lĩnh=領 + vực=域", "領域→分野。"], "đối thủ cạnh tranh": ["đối thủ=対手 + cạnh tranh=競争", "競争の相手→競合他社。"], "cạnh tranh": ["cạnh=競 + tranh=争", "競争。日本語と同じ。"], "thế mạnh": ["thế=勢 + mạnh=強い(固有語)", "強い勢い→強み。"], "lợi thế": ["lợi=利 + thế=勢", "有利な勢い→優位。"], "chất lượng": ["chất=質 + lượng=量", "質量。ただし意味は日本語の質量ではなく「品質」。"], "hiệu quả": ["hiệu=効 + quả=果", "効果。日本語と同じ。"], "tiết kiệm": ["tiết=節 + kiệm=倹", "節倹→節約する。"], "đáng tin cậy": ["đáng=値する(固有語) + tin=信 + cậy=頼る(固有語)", "信じて頼るに値する→信頼できる。"], "hài lòng": ["hài=諧(推定) + lòng=心(固有語)", "心が和む→満足する。"], "lâu dài": ["固有語", "lâu=長い時間、dài=長い→長期の。"], "quan hệ": ["quan=関 + hệ=係", "関係。日本語と同じ。"], "khu vực": ["khu=区 + vực=域", "区域→地域・エリア。"], "toàn quốc": ["toàn=全 + quốc=国", "全国。日本語と同じ。"], "quốc tế": ["quốc=国 + tế=際", "国際。日本語と同じ。"]};
+const ETY = {"báo giá": ["báo=報 + giá=価", "報価=「価格を知らせる」→見積。中国語の報価と同じ作り。"], "đơn hàng": ["đơn=単 + hàng=行", "単=伝票。行は ngân hàng(銀行)の行で、店→商品の意味に。商品の伝票→注文。"], "đặt hàng": ["đặt=置く・予約する(固有語) + hàng=行(商品)", "商品を置く(予約する)→発注する。"], "mẫu": ["mẫu=見本・型(漢字は母とする説があるが不確か)"], "thử nghiệm": ["thử=試 + nghiệm=験", "試験。日本語と同じ。"], "chứng nhận": ["chứng=証 + nhận=認", "証認=認証。日本語と語順が逆。"], "quy chuẩn": ["quy=規 + chuẩn=準", "規準。決まりとしての基準→技術基準。"], "tiêu chuẩn": ["tiêu=標 + chuẩn=準", "標準。標準として定めたもの→規格。"], "báo cáo": ["báo=報 + cáo=告", "報告。日本語と同じ。"], "thời gian giao hàng": ["thời gian=時間 + giao=交 + hàng=行(商品)", "交=渡す。「商品を渡す時間」→納期。"], "lịch": ["lịch=暦", "暦=カレンダー→スケジュール。"], "hồ sơ": ["hồ sơ=書類一式(語源は不確か)"], "xác nhận": ["xác=確 + nhận=認", "確認。日本語と同じ。"], "chi phí": ["chi=支 + phí=費", "支費=支払う費用→費用。"], "khách hàng": ["khách=客 + hàng=行", "行=店・商い。店の客→お客さん(取引先)。"], "hợp đồng": ["hợp=合 + đồng=同", "合同=合わせて同じにする→契約。日本語の「合同」と同じ字。"], "thanh toán": ["thanh=清 + toán=算", "清算=お金を清めて計算→支払い。"], "hóa đơn": ["hóa=貨 + đơn=単", "貨単=商品の伝票→請求書。"], "phòng thí nghiệm": ["phòng=房 + thí=試 + nghiệm=験", "房=部屋。「試験の部屋」→試験所。"], "sản phẩm": ["sản=産 + phẩm=品", "産品→製品。"], "nói lại": ["固有語", "nói=言う、lại=再び。"], "chậm lại": ["固有語", "chậm=遅い、lại=再び・元に。"], "hiểu": ["hiểu=暁", "暁=夜が明ける→分かる、理解する。"], "không hiểu": ["không=不(否定) + hiểu=暁", "không=空・否定。「理解しない」。"], "cuộc họp": ["cuộc=局(古い借用) + họp=集まる", "局=一つの場。集まる場→会議。"], "đề xuất": ["đề=提 + xuất=出", "提出。中国語では「提案する」の意味。"], "yêu cầu": ["yêu=要 + cầu=求", "要求。日本語と同じ。"], "vấn đề": ["vấn=問 + đề=題", "問題。日本語と同じ。"], "giải pháp": ["giải=解 + pháp=法", "解法→解決策。"], "hạn chót": ["hạn=限 + chót=最後(固有語)", "「限りの最後」→締め切り。"], "trễ": ["固有語"], "gấp": ["固有語"], "giá": ["giá=価", "価。価格。"], "giảm giá": ["giảm=減 + giá=価", "減価→値引き。"], "tổng cộng": ["tổng=総 + cộng=共", "総共→合計。"], "đã bao gồm": ["đã=〜済み(固有語) + bao=包 + gồm=含む(固有語)", "「包んで含む」→含まれている。"], "chưa bao gồm": ["chưa=まだ〜ない(固有語) + bao=包 + gồm=含む(固有語)", "含まれていない。"], "kết quả": ["kết=結 + quả=果", "結果。日本語と同じ。"], "đạt": ["đạt=達", "達する→合格・適合。"], "không đạt": ["không=不(否定) + đạt=達", "達しない→不合格。"], "tài liệu": ["tài=材 + liệu=料", "材料→資料。"], "thiết bị": ["thiết=設 + bị=備", "設備→機器。"], "nhà sản xuất": ["nhà=家(固有語) + sản=産 + xuất=出", "産出する家→メーカー。"], "nhập khẩu": ["nhập=入 + khẩu=口", "入口。荷物が入る口→輸入。"], "nhãn": ["nhãn=ラベル(語源は不確か)"], "chứng nhận hợp quy": ["chứng nhận=認証 + hợp=合 + quy=規", "合規=規則に合う→適合認証。"], "công bố hợp quy": ["công=公 + bố=布 + hợp=合 + quy=規", "公布=広く知らせる。「規則に合うと公表」→適合宣言。"], "thông số kỹ thuật": ["thông=通 + số=数 + kỹ=技 + thuật=術", "技術+通じる数値→技術仕様。"], "hạng mục": ["hạng=項 + mục=目", "項目。日本語と同じ。"], "dự án": ["dự=予 + án=案", "予案→プロジェクト(計画案)。"], "thuế VAT": ["thuế=税", "税。VATは付加価値税(消費税)。"], "biên bản cuộc họp": ["biên=編 + bản=本 + cuộc họp=会議", "編本=まとめて書いた記録→議事録。熟語はベトナム独自。"], "lịch họp": ["lịch=暦 + họp=集まる(固有語)", "会議のカレンダー→会議の予定。"], "hôm nay": ["固有語", "hôm=日、nay=今。"], "ngày mai": ["固有語", "ngày=日、mai=翌。"], "tuần sau": ["tuần=旬 + sau=後(固有語)", "旬=10日→7日の週。"], "tuần này": ["tuần=旬 + này=この(固有語)"], "tháng sau": ["固有語(月の漢越語は nguyệt)", "tháng=月、sau=後。"], "buổi sáng": ["固有語", "buổi=時間帯、sáng=朝・明るい。"], "buổi chiều": ["固有語", "buổi=時間帯、chiều=午後。"], "giờ": ["giờ=時(古い時代の借用)", "時=時間。今の漢越語の読みは thời(thời gian=時間)。"], "phút": ["固有語(分の漢越語は phân)"], "bắt đầu": ["bắt=捕まえる(固有語) + đầu=頭", "頭をつかむ→始める。đầu は頭の漢越語。"], "kết thúc": ["kết=結 + thúc=束", "結束→終わる。"], "tiếp tục": ["tiếp=接 + tục=続", "接続→続ける。"], "đồng ý": ["đồng=同 + ý=意", "同意。日本語と同じ。"], "không đồng ý": ["không=不(否定) + đồng=同 + ý=意", "不同意。"], "đúng rồi": ["固有語", "đúng=正しい、rồi=済み。"], "chắc chắn": ["固有語"], "có thể": ["có=ある(固有語) + thể=体", "体=やり方・形。「やり方がある」→できる。"], "không thể": ["không=否定 + có thể", "できない。"], "cần": ["固有語"], "biết": ["固有語"], "chưa biết": ["固有語", "chưa=まだ〜ない、biết=知る。"], "hỏi": ["固有語"], "trả lời": ["固有語", "trả=返す、lời=言葉。"], "quan trọng": ["quan=関 + trọng=重", "関わりが重い→重要。日本語は「重要」。"], "không": ["không=空", "空=から→ゼロ。否定の「ない」にも使う。"], "một": ["固有語(一の漢越語は nhất)", "nhất=一。例: nhất định=一定。"], "hai": ["固有語(二の漢越語は nhị)", "nhị=二。"], "ba": ["固有語(三の漢越語は tam)", "tam=三。例: tam giác=三角。"], "bốn": ["固有語(四の漢越語は tứ)", "tứ=四。"], "năm": ["固有語(五の漢越語は ngũ)", "ngũ=五。年は niên。"], "sáu": ["固有語(六の漢越語は lục)", "lục=六。"], "bảy": ["固有語(七の漢越語は thất)", "thất=七。"], "tám": ["固有語(八の漢越語は bát)", "bát=八。"], "chín": ["固有語(九の漢越語は cửu)", "cửu=九。"], "mười": ["固有語(十の漢越語は thập)", "thập=十。"], "trăm": ["固有語(百の漢越語は bách)", "bách=百。例: bách hóa=百貨。"], "ngàn": ["固有語(千の漢越語は thiên)", "thiên=千。"], "triệu": ["triệu=兆", "兆。ただし日本語の兆(1兆)とは違い、triệu=100万。"], "đồng": ["đồng=銅", "銅。昔の銅貨→通貨の「ドン」。"], "đô la": ["外来語(ドル)"], "bao nhiêu": ["固有語"], "số lượng": ["số=数 + lượng=量", "数量。日本語と同じ。"], "đơn giá": ["đơn=単 + giá=価", "単価。日本語と同じ。"], "mỗi": ["mỗi=毎", "毎。毎日、毎回の「毎」。"], "cái": ["固有語", "物を数える助数詞。"], "bộ": ["bộ=部", "部→セット(一組)。"], "tăng": ["tăng=増", "増。増える。"], "giảm": ["giảm=減", "減。減る。"], "khoảng": ["固有語"], "email": ["外来語(メール)"], "gửi": ["gửi=寄(古い時代の借用・推定)", "寄せる→送る。今の漢越語の読みは ký。"], "nhận": ["nhận=認", "認める→受け取る。chứng nhận の nhận と同じ。"], "đính kèm": ["đính=訂 + kèm=添える(固有語)", "訂=綴じる(中国語の装訂)。綴じて添える→添付する。"], "tệp đính kèm": ["固有語(tệp=ファイル) + đính kèm=添付"], "phản hồi": ["phản=反 + hồi=回", "反回→返ってくる→返信。"], "điện thoại": ["điện=電 + thoại=話", "電話。日本語と同じ。"], "gọi": ["固有語"], "số điện thoại": ["số=数・番号 + điện thoại=電話", "電話番号。"], "liên hệ": ["liên=連 + hệ=係・系", "連係(連繋)→連絡する。"], "bận": ["固有語"], "rảnh": ["固有語"], "chờ": ["固有語"], "một chút": ["固有語(một=1、chút=少し)"], "xin lỗi": ["固有語", "xin=請う、lỗi=誤り・過ち。"], "cảm ơn": ["cảm=感 + ơn=恩", "感恩→恩に感謝→ありがとう。"], "không sao": ["固有語", "không=ない、sao=どうして→問題ない。"], "địa chỉ": ["địa=地 + chỉ=址", "地址→住所。"], "kiểm tra": ["kiểm=検 + tra=査", "検査→確認する。"], "sửa": ["固有語"], "cập nhật": ["cập=及 + nhật=日", "日付に及ぶ(追いつく)→最新にする→更新。ベトナム独自の熟語。"], "phiên bản": ["phiên=翻 + bản=版", "翻版=版を作り直したもの→バージョン。phiên dịch=翻訳 の phiên。"], "trước": ["固有語(前の漢越語は tiền)"], "sau": ["固有語(後の漢越語は hậu)"], "tiếp theo": ["tiếp=接 + theo=従う(固有語)", "続いて→次の。"], "vì": ["vì=為", "為→〜のために・〜だから。"], "nên": ["固有語"], "cho nên": ["固有語", "cho=〜に、nên=〜なので。"], "nhưng": ["固有語"], "tuy nhiên": ["tuy=雖 + nhiên=然", "雖然=〜ではあるが。"], "nếu": ["固有語"], "thì": ["thì=時(推定)", "時→「〜のときは」→〜なら。文法語としての由来は確定していない。"], "hoặc": ["hoặc=或", "或。或いは。"], "và": ["固有語"], "với": ["固有語"], "cũng": ["固有語"], "đã": ["固有語"], "đang": ["固有語"], "sẽ": ["固有語"], "chưa": ["固有語"], "rồi": ["固有語"], "vẫn": ["固有語"], "rất": ["固有語"], "hơi": ["固有語"], "lắm": ["固有語"], "thêm": ["固有語"], "nữa": ["固有語"], "ví dụ": ["ví=譬(thí の口語形) + dụ=喩", "譬喩=たとえ→例えば。書き言葉では thí dụ とも言う。"], "lý do": ["lý=理 + do=由", "理由。日本語と同じ。"], "ý kiến": ["ý=意 + kiến=見", "意見。日本語と同じ。"], "đăng ký": ["đăng=登 + ký=記", "登記→登録。"], "nộp": ["nộp=納", "納める→提出する。"], "phê duyệt": ["phê=批 + duyệt=閲", "批閲=目を通して可否を決める→承認。"], "cấp": ["cấp=給", "給→与える→発行する。"], "giấy chứng nhận": ["giấy=紙(古い時代の借用) + chứng nhận=認証", "認証の紙→認証書。"], "hiệu lực": ["hiệu=効 + lực=力", "効力。日本語と同じ。"], "hết hạn": ["hết=尽きる(固有語) + hạn=限", "限りが尽きる→期限切れ。"], "gia hạn": ["gia=加 + hạn=限", "加限→期限を加える→延長。"], "quy trình": ["quy=規 + trình=程", "規程→手順・プロセス。"], "bước": ["固有語"], "giai đoạn": ["giai=階 + đoạn=段", "階段→段階。日本語と逆順。"], "tiến độ": ["tiến=進 + độ=度", "進度→進捗。"], "hoàn thành": ["hoàn=完 + thành=成", "完成→完了する。"], "xử lý": ["xử=処 + lý=理", "処理。日本語と同じ。"], "đủ": ["固有語"], "thiếu": ["thiếu=少", "少ない→不足。thiếu niên=少年 の thiếu。"], "sai": ["固有語"], "chính xác": ["chính=正 + xác=確", "正確。日本語と同じ。"], "lỗi": ["固有語"], "cải thiện": ["cải=改 + thiện=善", "改善。日本語と同じ。"], "thay đổi": ["固有語", "thay=替える、đổi=換える。"], "cơ quan quản lý": ["cơ quan=機関 + quản=管 + lý=理", "管理機関→規制当局。"], "phí": ["phí=費", "費。手数料・費用。"], "mã sản phẩm": ["mã=碼(コード) + sản phẩm=産品", "碼=数字や記号→コード。"], "mẫu thử": ["mẫu=見本 + thử=試", "試す見本→試験用サンプル。"], "tương thích điện từ": ["tương=相 + thích=適 + điện từ=電磁", "相適+電磁→電磁両立性(EMC)。"], "an toàn": ["an=安 + toàn=全", "安全。日本語と同じ。"], "sóng vô tuyến": ["sóng=波(固有語) + vô=無 + tuyến=線", "無線の波→無線(RF)。"], "đo": ["固有語(語源は不確か)"], "máy đo": ["máy=機(古い時代の借用・推定) + đo=測る(固有語)", "測る機械→測定器。"], "hiệu chuẩn": ["hiệu=校 + chuẩn=準", "校準→校正。"], "chuẩn bị": ["chuẩn=準 + bị=備", "準備。日本語と同じ。"], "đóng gói": ["固有語", "đóng=閉じる、gói=包む。"], "vận chuyển": ["vận=運 + chuyển=転", "運転→運んで動かす→輸送する。"], "hải quan": ["hải=海 + quan=関", "海関→税関。"], "ưu tiên": ["ưu=優 + tiên=先", "優先。日本語と同じ。"], "nhanh": ["固有語"], "bình thường": ["bình=平 + thường=常", "平常→通常。"], "bắt buộc": ["固有語", "bắt=捕まえる、buộc=縛る→強制→必須。"], "tùy vào": ["tùy=随", "随→〜に従う→〜次第。"], "pin": ["外来語(フランス語 pile)"], "nguồn điện": ["nguồn=源(固有語) + điện=電", "電気の源→電源。"], "điện áp": ["điện=電 + áp=圧", "電圧。"], "không dây": ["không=空(否定) + dây=線・ひも(固有語)", "線がない→ワイヤレス。"], "cấu hình": ["cấu=構 + hình=形", "構形→構成・設定。"], "phần mềm": ["phần=分 + mềm=柔らかい(固有語)", "柔らかい部分→ソフトウェア。phần trăm=パーセント の phần。"], "bản sao": ["bản=本 + sao=抄", "抄=書き写す。写した本→コピー。"], "bản gốc": ["bản=本 + gốc=根・元(固有語)", "元の本→原本。"], "chữ ký": ["chữ=字(古い時代の借用) + ký=記", "字を記す→署名。ký giả=記者 の ký。"], "thị trường": ["thị=市 + trường=場", "市場。日本語と同じ。"], "thảo luận": ["thảo=討 + luận=論", "討論→話し合う。"], "giải thích": ["giải=解 + thích=釈", "解釈→説明する。"], "tóm tắt": ["固有語", "tóm=つまむ、tắt=短くする→要約。"], "nhắc lại": ["固有語", "nhắc=思い出させる、lại=再び。"], "mục tiêu": ["mục=目 + tiêu=標", "目標。日本語と同じ。"], "kế hoạch": ["kế=計 + hoạch=画", "計画。日本語と同じ。"], "quyết định": ["quyết=決 + định=定", "決定。日本語と同じ。"], "lựa chọn": ["固有語", "lựa=選ぶ、chọn=選ぶ。"], "khó": ["固有語"], "dễ": ["dễ=易(古い時代の借用・推定)", "易しい。今の漢越語の読みは dị。"], "khả năng": ["khả=可 + năng=能", "可能(性)・能力。"], "cơ hội": ["cơ=機 + hội=会", "機会。日本語と同じ。"], "rủi ro": ["固有語"], "ngân sách": ["ngân=銀 + sách=冊", "銀の帳簿→予算。"], "so sánh": ["固有語", "so=比べる、sánh=並べる。"], "đối tác": ["đối=対 + tác=作", "向き合って一緒に作る相手→パートナー。hợp tác=協力 の tác。"], "người phụ trách": ["người=人(固有語) + phụ=負 + trách=責", "負責=責任を負う→担当者。"], "bộ phận": ["bộ=部 + phận=分", "部分→部署。"], "giám đốc": ["giám=監 + đốc=督", "監督→トップ(社長・部長)。"], "nhân viên": ["nhân=人 + viên=員", "人員→社員。"], "thương lượng": ["thương=商 + lượng=量", "商量→相談して決める→交渉。"], "thỏa thuận": ["thỏa=妥 + thuận=順", "妥協+順→合意。"], "điều kiện": ["điều=条 + kiện=件", "条件。日本語と同じ。"], "hỗ trợ": ["hỗ=互 + trợ=助", "互助→サポート。"], "hợp tác": ["hợp=合 + tác=作", "合作→協力。"], "nghĩa là": ["nghĩa=義 + là=〜である(固有語)", "義(意味)は〜である。"], "tức là": ["tức=即 + là=〜である(固有語)", "即ち→すなわち。"], "cụ thể": ["cụ=具 + thể=体", "具体。日本語と同じ。"], "đại khái": ["đại=大 + khái=概", "大概→だいたい。"], "chi tiết": ["chi=支 + tiết=節", "支節→細かい点→詳細。"], "điểm chính": ["điểm=点 + chính=正(主)", "点+主要→主なポイント。"], "xin phép": ["xin=請う(固有語) + phép=法", "法→許可。「許可を請う」→〜させていただく。"], "đầu tiên": ["đầu=頭 + tiên=先", "頭+先→最初に。"], "cuối cùng": ["固有語", "cuối=終わり、cùng=最後。"], "thật ra": ["thật=実(thực の口語形) + ra=出る(固有語)", "実が出る→実は。"], "dĩ nhiên": ["dĩ=已 + nhiên=然", "已然=すでにそうである→もちろん。"], "có lẽ": ["có=ある(固有語) + lẽ=理(lý の口語形)", "道理がある→たぶん。"], "chắc là": ["固有語"], "thường": ["thường=常", "常→普段。"], "luôn luôn": ["固有語"], "đôi khi": ["固有語", "đôi=対・いくつか、khi=とき。"], "ngoài ra": ["固有語(外の漢越語は ngoại)", "ngoài=外、ra=出る。"], "mặc dù": ["固有語"], "do đó": ["do=由 + đó=それ(固有語)", "それに由る→したがって。"], "yên tâm": ["yên=安 + tâm=心", "安心。日本語と同じ。"], "rõ ràng": ["固有語"], "phức tạp": ["phức=複 + tạp=雑", "複雑。日本語と同じ。"], "đơn giản": ["đơn=単 + giản=簡", "単簡→簡単。日本語と逆順。"], "hiểu lầm": ["hiểu=暁(分かる) + lầm=誤る(固有語)", "誤って分かる→誤解。"], "thắc mắc": ["固有語"], "thời tiết": ["thời=時 + tiết=節", "時節→天気。"], "nóng": ["固有語"], "mát": ["固有語"], "mưa": ["固有語"], "kẹt xe": ["kẹt=詰まる(固有語) + xe=車(古い時代の借用)", "車が詰まる→渋滞。"], "cuối tuần": ["cuối=終わり(固有語) + tuần=旬", "週の終わり→週末。"], "gia đình": ["gia=家 + đình=庭", "家庭→家族。"], "ăn": ["固有語"], "uống": ["固有語"], "cà phê": ["外来語(フランス語 café)"], "ăn trưa": ["固有語", "ăn=食べる、trưa=昼。"], "ngon": ["固有語"], "nhà hàng": ["nhà=家(固有語) + hàng=行", "商いの家→レストラン。"], "mời": ["固有語"], "quán": ["quán=館", "館→お店・食堂。"], "nhậu": ["固有語"], "dô": ["固有語", "乾杯の掛け声。"], "no": ["固有語"], "đói": ["固有語"], "khỏe": ["固有語"], "mệt": ["固有語"], "vui": ["固有語"], "miền Nam": ["miền=地方(固有語) + Nam=南", "南。ベトナム語で Nam=南、Bắc=北。"], "quen": ["quen=慣(古い時代の借用・推定)", "慣れる。今の漢越語の読みは quán。"], "thích": ["固有語"], "thứ hai": ["thứ=次 + hai=2", "次の(第)2番目→月曜日。"], "thứ ba": ["thứ=次 + ba=3", "第3→火曜日。"], "thứ tư": ["thứ=次 + tư=4", "第4→水曜日。tư は四の別の言い方。"], "thứ năm": ["thứ=次 + năm=5", "第5→木曜日。"], "thứ sáu": ["thứ=次 + sáu=6", "第6→金曜日。"], "thứ bảy": ["thứ=次 + bảy=7", "第7→土曜日。"], "chủ nhật": ["chủ=主 + nhật=日", "主日→日曜日。"], "ngày": ["固有語(日の漢越語は nhật)"], "tuần": ["tuần=旬", "旬=10日→7日の週。"], "tháng": ["固有語(月の漢越語は nguyệt)"], "năm nay": ["固有語", "năm=年、nay=今。"], "hôm qua": ["固有語", "hôm=日、qua=過ぎた。"], "buổi tối": ["固有語", "buổi=時間帯、tối=夜。"], "buổi trưa": ["固有語", "buổi=時間帯、trưa=昼。"], "đầu tháng": ["đầu=頭 + tháng=月(固有語)", "月の頭→月初。"], "cuối tháng": ["固有語", "cuối=終わり、tháng=月。"], "ngày nghỉ": ["固有語", "ngày=日、nghỉ=休む。"], "ngày lễ": ["ngày=日(固有語) + lễ=礼", "礼の日→祝日。"], "sớm": ["固有語"], "muộn": ["muộn=晩(古い時代の借用・推定)", "晩=遅い。今の漢越語の読みは vãn。"], "đúng giờ": ["固有語", "đúng=正しい、giờ=時間。"], "thời hạn": ["thời=時 + hạn=限", "時限→期限。"], "mỗi ngày": ["mỗi=毎 + ngày=日(固有語)", "毎日。"], "mỗi tuần": ["mỗi=毎 + tuần=旬", "毎週。"], "lịch làm việc": ["lịch=暦 + làm việc=働く(固有語)", "仕事の暦→スケジュール。"], "trực tuyến": ["trực=直 + tuyến=線", "直線→「直接つながった線」→オンライン。日本語の「直結」に近い発想。"], "đường truyền": ["đường=道(固有語) + truyền=伝", "道+伝→「データが伝わる道」→回線・通信。"], "mạng": ["固有語"], "âm thanh": ["âm=音 + thanh=声", "音声。日本語と同じ。"], "chia sẻ màn hình": ["chia sẻ=分け合う(固有語) + màn=幔(幕) + hình=形", "幕に映る形→画面。分け合う+画面→画面共有。"], "micro": ["外来語(マイク)"], "tắt tiếng": ["固有語", "tắt=消す、tiếng=音。"], "bật": ["固有語"], "tắt": ["固有語"], "kết nối": ["kết=結 + nối=つなぐ(固有語)", "結ぶ+つなぐ→接続。"], "mất kết nối": ["mất=失う(固有語) + kết nối=接続", "接続を失う→切れる。"], "đăng nhập": ["đăng=登 + nhập=入", "登入→ログインする。"], "đường link": ["đường=道(固有語) + link=外来語", "リンク。"], "mật khẩu": ["mật=密 + khẩu=口", "秘密の口(言葉)→合言葉→パスワード。khẩu=口 は nhập khẩu(輸入)と同じ。"], "gọi lại": ["固有語", "gọi=呼ぶ・かける、lại=再び。"], "nhắn tin": ["nhắn=伝える(固有語) + tin=信", "信=便り→メッセージを送る。"], "tin nhắn": ["tin=信 + nhắn=伝える(固有語)", "便りを伝える→メッセージ。"], "lời nhắn": ["固有語", "lời=言葉、nhắn=伝える。"], "sóng yếu": ["固有語", "sóng=波、yếu=弱い。"], "nghe rõ": ["固有語", "nghe=聞く、rõ=はっきり。"], "nghe không rõ": ["固有語", "nghe=聞く、không rõ=はっきりしない。"], "mở": ["固有語"], "đóng": ["固有語"], "tải về": ["tải=載 + về=戻る(固有語)", "載せる→手元に載せてくる→ダウンロード。"], "ồn": ["固有語"], "chuyển khoản": ["chuyển=転 + khoản=款", "款=お金の項目。お金を移す→振込。"], "tiền mặt": ["tiền=銭 + mặt=顔・面(固有語)", "表に出ているお金→現金。"], "đặt cọc": ["固有語", "đặt=置く、cọc=杭→杭を打って押さえる→手付金。"], "trả trước": ["固有語", "trả=払う・返す、trước=前。"], "trả sau": ["固有語", "trả=払う・返す、sau=後。"], "công nợ": ["công=公 + nợ=借り(固有語)", "帳簿に載った借り→未払い残高。"], "hạn thanh toán": ["hạn=限 + thanh toán=清算", "支払いの限り→支払期限。"], "chiết khấu": ["chiết=折 + khấu=扣", "折扣=値引き。中国語の「打折」と同じ発想。"], "ưu đãi": ["ưu=優 + đãi=待", "優待。日本語と同じ。"], "khuyến mãi": ["khuyến=勧 + mãi=売", "売るのを勧める→販促・キャンペーン。"], "báo giá lại": ["báo giá=報価 + lại=再び(固有語)", "もう一度見積→再見積。"], "xuất hóa đơn": ["xuất=出 + hóa đơn=貨単", "請求書を出す→発行する。"], "hóa đơn đỏ": ["hóa đơn=貨単 + đỏ=赤(固有語)", "昔のVATインボイスが赤い紙だった名残。"], "tài khoản ngân hàng": ["tài=財 + khoản=款 + ngân hàng=銀行", "財の項目→口座。"], "ngân hàng": ["ngân=銀 + hàng=行", "銀行。日本語と同じ。"], "số tài khoản": ["số=数 + tài khoản=口座", "口座の番号。"], "tạm ứng": ["tạm=暫 + ứng=応", "暫く立て替える→仮払い。"], "hoàn tiền": ["hoàn=還 + tiền=銭", "お金を還す→返金。"], "phát sinh": ["phát=発 + sinh=生", "発生。日本語と同じ。"], "trọn gói": ["固有語", "trọn=まるごと、gói=包み→一括。"], "điều khoản": ["điều=条 + khoản=款", "条款→条項。"], "ký hợp đồng": ["ký=記(署名) + hợp đồng=合同(契約)", "契約に署名する→契約を結ぶ。"], "thanh lý hợp đồng": ["thanh=清 + lý=理 + hợp đồng=契約", "清理=片付ける→契約の清算・終了。"], "tỷ giá": ["tỷ=比 + giá=価", "比価=比べた価格→為替レート。"], "giá cuối": ["giá=価 + cuối=最後(固有語)", "最後の価格→最終価格。"], "kích thước": ["kích(語源は不確か) + thước=尺(古い時代の借用)", "尺=長さを測るもの→寸法。"], "trọng lượng": ["trọng=重 + lượng=量", "重量。日本語と同じ。"], "nhiệt độ": ["nhiệt=熱 + độ=度", "熱度→温度。"], "độ ẩm": ["độ=度 + ẩm=湿る(推定)", "湿り具合の度→湿度。"], "công suất": ["công=功 + suất=率", "功率=出力・電力。中国語の「功率」と同じ。"], "tần số": ["tần=頻 + số=数", "頻数=繰り返す回数→周波数。"], "dòng điện": ["dòng=流れ(固有語) + điện=電", "電気の流れ→電流。"], "điện trở": ["điện=電 + trở=阻", "電阻=電気を阻む→抵抗。中国語の「电阻」と同じ。"], "dải tần": ["dải=帯(固有語) + tần=頻", "周波数の帯→周波数帯。"], "ăng-ten": ["外来語(フランス語 antenne)", ""], "bộ sạc": ["bộ=部 + sạc=充電(外来語・フランス語 charger)", "充電する一式→充電器。"], "sạc": ["外来語(フランス語 charger)", ""], "cổng": ["固有語", "門→ポート・端子。cổng USB=USBポート。"], "vỏ": ["固有語", "殻・皮→筐体。"], "linh kiện": ["linh=零 + kiện=件", "零件=部品。中国語の「零件」と同じ。"], "bo mạch": ["bo=外来語(board) + mạch=脈", "脈=回路(mạch điện=電気回路)。回路の板→基板。"], "nhiễu": ["nhiễu=擾", "擾=乱す→ノイズ・妨害。"], "phát xạ": ["phát=発 + xạ=射", "発射→放射(エミッション)。"], "miễn nhiễm": ["miễn=免 + nhiễm=染", "染まるのを免れる→イミュニティ。免疫と同じ発想。"], "giới hạn": ["giới=界 + hạn=限", "界限→限度・制限。"], "vượt": ["固有語", ""], "sai số": ["sai=違い(固有語) + số=数", "違った数→誤差。"], "đơn vị": ["đơn=単 + vị=位", "単位。日本語と同じ。"], "kiểu máy": ["kiểu=型(語源は不確か) + máy=機(古い借用・推定)", "機械の型→機種。"], "hướng dẫn sử dụng": ["hướng=向 + dẫn=引 + sử=使 + dụng=用", "向引=案内。使用の案内→取扱説明書。"], "hợp chuẩn": ["hợp=合 + chuẩn=準", "規格(標準)に合う→規格適合。hợp quy(規則に合う)と対になる言葉。"], "kiểm định": ["kiểm=検 + định=定", "検定。日本語と同じ。"], "giám định": ["giám=鑑 + định=定", "鑑定。日本語と同じ。"], "tổ chức chứng nhận": ["tổ chức=組織 + chứng nhận=認証", "認証する組織→認証機関。"], "công nhận": ["công=公 + nhận=認", "公認→認定。"], "chỉ định": ["chỉ=指 + định=定", "指定。日本語と同じ。"], "dấu hợp quy": ["dấu=印(固有語) + hợp=合 + quy=規", "規則に合う印→適合マーク。"], "lô hàng": ["lô=ロット(外来語・フランス語 lot) + hàng=行(商品)", "商品のロット→貨物。"], "kiểm tra nhà nước": ["kiểm tra=検査 + nhà nước=国家(固有語)", "nhà=家、nước=国→国家。国の検査。"], "thông quan": ["thông=通 + quan=関", "通関。日本語と同じ。"], "tờ khai": ["tờ=紙1枚(固有語) + khai=開", "開=申し出る(khai báo=申告)。申告の紙→申告書。"], "mẫu điển hình": ["mẫu=見本 + điển=典 + hình=型", "典型的な見本→代表サンプル。"], "phương thức": ["phương=方 + thức=式", "方式。日本語と同じ。"], "đánh giá": ["đánh=打つ(固有語) + giá=価", "価値を付ける→評価する。"], "nhà máy": ["固有語", "nhà=建物、máy=機械→工場。"], "giấy phép": ["giấy=紙(古い借用) + phép=法", "法=許可。許可の紙→許可証。"], "miễn kiểm tra": ["miễn=免 + kiểm tra=検査", "検査を免れる→検査免除。"], "thông tư": ["thông=通 + tư=咨", "咨=問い合わせ・通知。省が出す通知→通達(省令)。"], "nghị định": ["nghị=議 + định=定", "議定→政府の政令。"], "văn bản": ["văn=文 + bản=本", "文本→文書。"], "quy định": ["quy=規 + định=定", "規定。日本語と同じ。"], "áp dụng": ["áp=押(推定) + dụng=用", "当てて用いる→適用する。"], "hiện hành": ["hiện=現 + hành=行", "現行。日本語と同じ。"], "sửa đổi": ["固有語", "sửa=直す、đổi=変える→改正する。"], "bổ sung": ["bổ=補 + sung=充", "補充→追加・補足。"], "khiếu nại": ["khiếu=叫 + nại(漢字は不確か)", "叫ぶ→訴える→苦情を申し立てる。"], "phàn nàn": ["固有語", ""], "sự cố": ["sự=事 + cố=故", "事故→トラブル。"], "hư hỏng": ["固有語", "hư=壊れる(南部でよく使う)、hỏng=故障する。"], "bể": ["固有語", "南部の言い方。北部は vỡ。"], "trầy": ["固有語", ""], "thất lạc": ["thất=失 + lạc=落", "失落→なくす→紛失する。"], "đền bù": ["固有語", "đền=償う、bù=埋め合わせる。"], "bồi thường": ["bồi=賠 + thường=償", "賠償。日本語と同じ。"], "chịu trách nhiệm": ["chịu=受ける(固有語) + trách=責 + nhiệm=任", "責任を受ける→責任を負う。"], "nguyên nhân": ["nguyên=原 + nhân=因", "原因。日本語と同じ。"], "khắc phục": ["khắc=克 + phục=服", "克服→問題を乗り越える→是正する。"], "biện pháp": ["biện=弁(辦) + pháp=法", "辦法=やり方→対策。中国語の「办法」と同じ。"], "tái diễn": ["tái=再 + diễn=演", "再び演じる→再発する。"], "điều tra": ["điều=調 + tra=査", "調査。日本語と同じ。"], "thành thật": ["thành=誠 + thật=実", "誠実→誠に。"], "thông cảm": ["thông=通 + cảm=感", "気持ちが通じる→理解する・大目に見る。"], "kiên nhẫn": ["kiên=堅 + nhẫn=忍", "堅忍→辛抱する。"], "nghiêm trọng": ["nghiêm=厳 + trọng=重", "厳重→深刻・重大。"], "khẩn cấp": ["khẩn=緊 + cấp=急", "緊急。日本語と同じ。"], "tạm thời": ["tạm=暫 + thời=時", "暫時→一時的。"], "triệt để": ["triệt=徹 + để=底", "徹底。日本語と同じ。"], "đổi trả": ["固有語", "đổi=換える、trả=返す→交換・返品。"], "bảo hành": ["bảo=保 + hành=行", "保って行う→保証(アフターサービス)。"], "lặp lại": ["固有語", "lặp=重ねる、lại=再び→繰り返す。"], "giới thiệu": ["giới=介 + thiệu=紹", "介紹=紹介。日本語と語順が逆。"], "thành lập": ["thành=成 + lập=立", "成立→会社を立てる→設立する。"], "trụ sở": ["trụ=住 + sở=所", "住所。ただし意味は日本語の住所ではなく「本社・所在地」。"], "chi nhánh": ["chi=支 + nhánh=枝(固有語)", "支える枝→支店。"], "văn phòng": ["văn=文 + phòng=房", "文房=書き物をする部屋→事務所。"], "năng lực": ["năng=能 + lực=力", "能力。日本語と同じ。"], "kinh nghiệm": ["kinh=経 + nghiệm=験", "経験。日本語と同じ。"], "uy tín": ["uy=威 + tín=信", "威信→信用・評判。"], "chuyên nghiệp": ["chuyên=専 + nghiệp=業", "専業→プロの。"], "dịch vụ": ["dịch=役 + vụ=務", "役務→サービス。"], "lĩnh vực": ["lĩnh=領 + vực=域", "領域→分野。"], "đối thủ cạnh tranh": ["đối thủ=対手 + cạnh tranh=競争", "競争の相手→競合他社。"], "cạnh tranh": ["cạnh=競 + tranh=争", "競争。日本語と同じ。"], "thế mạnh": ["thế=勢 + mạnh=強い(固有語)", "強い勢い→強み。"], "lợi thế": ["lợi=利 + thế=勢", "有利な勢い→優位。"], "chất lượng": ["chất=質 + lượng=量", "質量。ただし意味は日本語の質量ではなく「品質」。"], "hiệu quả": ["hiệu=効 + quả=果", "効果。日本語と同じ。"], "tiết kiệm": ["tiết=節 + kiệm=倹", "節倹→節約する。"], "đáng tin cậy": ["đáng=値する(固有語) + tin=信 + cậy=頼る(固有語)", "信じて頼るに値する→信頼できる。"], "hài lòng": ["hài=諧(推定) + lòng=心(固有語)", "心が和む→満足する。"], "lâu dài": ["固有語", "lâu=長い時間、dài=長い→長期の。"], "quan hệ": ["quan=関 + hệ=係", "関係。日本語と同じ。"], "khu vực": ["khu=区 + vực=域", "区域→地域・エリア。"], "toàn quốc": ["toàn=全 + quốc=国", "全国。日本語と同じ。"], "quốc tế": ["quốc=国 + tế=際", "国際。日本語と同じ。"], "đồng nghiệp": ["đồng=同 + nghiệp=業", "同業→同じ職場の人→同僚。"], "cấp trên": ["cấp=級 + trên=上(固有語)", "上の級→上司。"], "cấp dưới": ["cấp=級 + dưới=下(固有語)", "下の級→部下。"], "sếp": ["外来語(フランス語 chef)", ""], "phân công": ["phân=分 + công=工", "分工=仕事を分ける→分担・割り当て。"], "giao việc": ["giao=交 + việc=仕事(固有語)", "交=渡す。仕事を渡す→任せる。"], "phụ trách": ["phụ=負 + trách=責", "負責=責任を負う→担当する。"], "xin ý kiến": ["xin=請う(固有語) + ý kiến=意見", "意見を請う→相談する。"], "duyệt": ["duyệt=閲", "閲=目を通す→承認する。phê duyệt(承認)の duyệt。"], "đề nghị": ["đề=提 + nghị=議", "提議→提案・依頼。"], "phối hợp": ["phối=配 + hợp=合", "配合→組み合わせる→連携する。"], "bàn giao": ["bàn=盤(推定) + giao=交", "交=渡す。渡して引き継ぐ。"], "nghỉ phép": ["nghỉ=休む(固有語) + phép=法", "法=許可。許可された休み→休暇。"], "tăng ca": ["tăng=増 + ca=勤務の番(固有語)", "勤務の番を増やす→残業。"], "nội bộ": ["nội=内 + bộ=部", "内部→社内。"], "trưởng phòng": ["trưởng=長 + phòng=房", "房=部屋→部署。部署の長→部長・課長。"], "phòng kinh doanh": ["phòng=房 + kinh=経 + doanh=営", "経営の部署→営業部。"], "phòng kỹ thuật": ["phòng=房 + kỹ thuật=技術", "技術の部署→技術部。"], "kế toán": ["kế=計 + toán=算", "計算→経理。"], "nhân sự": ["nhân=人 + sự=事", "人事。日本語と同じ。"], "công việc": ["công=工 + việc=仕事(固有語)", "仕事。"], "nhiệm vụ": ["nhiệm=任 + vụ=務", "任務。日本語と同じ。"], "kịp": ["固有語", ""], "tiến hành": ["tiến=進 + hành=行", "進行→実施する・進める。"], "theo dõi": ["固有語", "theo=従う、dõi=目で追う→フォローする。"]};
 
 const $ = id => document.getElementById(id);
 function etyText(e) { return (/^(固有語|外来語)/.test(e[0]) ? "" : "漢越語: ") + e[0]; }
@@ -799,13 +743,13 @@ function list() {
 }
 function cur() { const l = list(); if (state.idx >= l.length) state.idx = 0; return l[state.idx]; }
 
-function speak(text, opt) {
+function speak(text) {
   return new Promise(res => {
     try { if (navigator.audioSession) navigator.audioSession.type = "ambient"; } catch (e) {}
     if (!window.speechSynthesis) return res();
     try { speechSynthesis.cancel(); } catch (e) {}
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = "vi-VN"; if (voice) u.voice = voice; u.rate = (opt && opt.rate) || state.rate; u.pitch = (opt && opt.pitch) || 1;
+    u.lang = "vi-VN"; if (voice) u.voice = voice; u.rate = state.rate;
     u.onend = u.onerror = () => res();
     speechSynthesis.speak(u);
   });
@@ -1168,19 +1112,15 @@ function showView(v) {
   $("reviewView").hidden = v !== "review";
   $("testView").hidden = v !== "test";
   $("readView").hidden = v !== "read";
-  $("talkView").hidden = v !== "talk";
-  tkStop();
-  [["viewLearn", "learn"], ["viewReview", "review"], ["viewTest", "test"], ["viewRead", "read"], ["viewTalk", "talk"]].forEach(p => $(p[0]).setAttribute("aria-pressed", String(v === p[1])));
+  [["viewLearn", "learn"], ["viewReview", "review"], ["viewTest", "test"], ["viewRead", "read"]].forEach(p => $(p[0]).setAttribute("aria-pressed", String(v === p[1])));
   if (v === "review") startReview();
   if (v === "test") openTestSetup();
   if (v === "read") openReadList();
-  if (v === "talk") openTalkList();
 }
 $("viewLearn").addEventListener("click", () => showView("learn"));
 $("viewReview").addEventListener("click", () => showView("review"));
 $("viewTest").addEventListener("click", () => showView("test"));
 $("viewRead").addEventListener("click", () => showView("read"));
-$("viewTalk").addEventListener("click", () => showView("talk"));
 
 /* Reading: short emails and minutes built from what has been learned. */
 const READ = [
@@ -1712,278 +1652,8 @@ $("tRetry").addEventListener("click", () => {
 });
 $("tBack").addEventListener("click", openTestSetup);
 
-/* Talk: one southern-dialect conversation a day. Listen → check → shadow → speak. */
-const TALK = [
- {
-  id: "t1", date: "2026-10-30", theme: "仕事", title: "試験スケジュールの相談",
-  who: { a: "客", b: "私" }, whoFull: "客 = chị Thảo(日系メーカー担当)、私 = Hwang",
-  lines: [
-   ["a", "Alo, em Hwang hả? Chị Thảo bên công ty Sakura nè.", "もしもし、Hwangくん?サクラ社のタオだよ"],
-   ["b", "Dạ, em chào chị Thảo. Chị khỏe hông ạ?", "はい、タオさんこんにちは。お元気ですか?"],
-   ["a", "Chị khỏe. Chị gọi để hỏi lịch thử nghiệm cái máy lọc không khí mới đó em.", "元気よ。新しい空気清浄機の試験スケジュールを聞きたくて電話したの"],
-   ["b", "Dạ. Bên chị gửi mẫu qua khi nào được ạ?", "はい。サンプルはいつ送っていただけますか?"],
-   ["a", "Chắc thứ Hai tuần sau mẫu tới chỗ em. Thử nghiệm mất bao lâu vậy em?", "たぶん来週の月曜にサンプルがそっちに着くよ。試験はどれくらいかかる?"],
-   ["b", "Dạ, thử nghiệm khoảng hai tuần, rồi làm báo cáo thêm ba ngày nữa ạ.", "試験は約2週間で、そのあと報告書にさらに3日かかります"],
-   ["a", "Trời, lâu vậy hả? Bên chị cần giấy chứng nhận trước cuối tháng mười hai lận.", "えー、そんなにかかるの?こっちは12月末までに証明書が要るのよ"],
-   ["b", "Dạ, em hiểu. Nếu mẫu tới đúng thứ Hai thì em xếp lịch ưu tiên cho chị nghen.", "はい、分かります。月曜にちゃんと届けば、優先でスケジュールを組みますね"],
-   ["a", "Vậy thì tốt quá. Mà có tốn thêm phí hông em?", "それは助かる。でも追加費用はかかる?"],
-   ["b", "Dạ, xếp lịch ưu tiên thì không tính thêm phí ạ. Nhưng nếu thử nghiệm bị rớt thì phải làm lại, chi phí sẽ khác ạ.", "優先スケジュールなら追加費用はかかりません。ただ、試験で不合格だとやり直しになるので、費用が変わります"],
-   ["a", "Ừ, chị hiểu rồi. Em gửi báo giá với lịch cụ thể qua email giùm chị nha.", "うん、分かった。見積と具体的なスケジュールをメールで送ってね"],
-   ["b", "Dạ, chiều nay em gửi liền cho chị. Chị nhớ gửi kèm tài liệu kỹ thuật của sản phẩm nghen.", "はい、今日の午後すぐ送ります。製品の技術資料も一緒に送ってくださいね"],
-   ["a", "Ok em. Cảm ơn em nhiều nha.", "OK。ありがとうね"],
-   ["b", "Dạ, em cảm ơn chị. Chào chị ạ.", "ありがとうございます。失礼します"]
-  ],
-  qs: [
-   { q: "電話の目的は?", c: ["試験スケジュールを聞く", "見積を値下げしてほしい", "サンプルを返してほしい", "会議を予約したい"] },
-   { q: "サンプルはいつ届く?", c: ["来週の月曜", "今日の午後", "12月末", "来週の金曜"] },
-   { q: "試験と報告書で全部どれくらい?", c: ["約2週間+3日", "約1週間", "約1ヶ月", "3日だけ"] },
-   { q: "優先スケジュールの追加費用は?", c: ["かからない", "少しかかる", "倍になる", "不合格ならかからない"] },
-   { q: "Hwangが今日の午後にすることは?", c: ["見積とスケジュールをメールで送る", "サンプルを取りに行く", "電話をかけ直す", "証明書を出す"] }
-  ],
-  speak: [
-   { q: "この会話を2〜3文でベトナム語で要約して", a: "Chị Thảo gọi hỏi lịch thử nghiệm máy lọc không khí. Thử nghiệm khoảng hai tuần, làm báo cáo thêm ba ngày. Chiều nay em gửi báo giá với lịch qua email." },
-   { q: "「サンプルはいつ届きますか?」と聞く", a: "Dạ, mẫu khi nào tới vậy chị?" },
-   { q: "「試験は約2週間、報告書にさらに3日です」", a: "Dạ, thử nghiệm khoảng hai tuần, báo cáo thêm ba ngày nữa ạ." },
-   { q: "「月曜に届けば、優先で組みますね」", a: "Nếu mẫu tới thứ Hai thì em xếp lịch ưu tiên cho chị nghen." },
-   { q: "「不合格だとやり直しで、費用が変わります」", a: "Nếu thử nghiệm bị rớt thì phải làm lại, chi phí sẽ khác ạ." },
-   { q: "「今日の午後すぐ送ります」", a: "Dạ, chiều nay em gửi liền cho chị ạ." }
-  ]
- }
-];
-let talkDone = {};
-try { talkDone = JSON.parse(localStorage.getItem("nghe-noi-talk") || "{}") || {}; } catch (e) { talkDone = {}; }
-function saveTalk() { try { localStorage.setItem("nghe-noi-talk", JSON.stringify(talkDone)); } catch (e) {} }
-const TK = { t: null, step: 1, rate: 0.85, run: 0, jp: false, sh: 0, shText: 1, shAuto: false, plays: 0 };
-const PITCH = { a: 1.15, b: 0.88 };
-function tkSay(line) { return speak(line[1], { pitch: PITCH[line[0]], rate: TK.rate }); }
-function tkStop() { TK.run++; TK.shAuto = false; try { speechSynthesis.cancel(); } catch (e) {} paintNow(-1); if ($("shAuto")) $("shAuto").textContent = "自動シャドー"; }
-function paintNow(i) {
-  ["tkLines1", "tkLines2"].forEach(id => [].slice.call($(id).children).forEach((r, k) => r.classList.toggle("now", k === i)));
-}
-function talkStreak() {
-  const days = new Set(Object.keys(talkDone).map(k => talkDone[k].done).filter(Boolean));
-  let n = 0; const d = new Date();
-  if (!days.has(ymd(d))) d.setDate(d.getDate() - 1);
-  while (days.has(ymd(d))) { n++; d.setDate(d.getDate() - 1); }
-  return { n: n, total: Object.keys(talkDone).filter(k => talkDone[k].done).length };
-}
-function openTalkList() {
-  tkStop();
-  $("tkList").hidden = false; $("tkPage").hidden = true;
-  const st = talkStreak();
-  $("tkStreak").innerHTML = "<span>連続 <b>" + st.n + "</b> 日</span><span>完了 <b>" + st.total + "</b> / " + TALK.length + " 本</span>";
-  const box = $("tkItems"); box.textContent = "";
-  TALK.slice().reverse().forEach((t, i) => {
-    const d = talkDone[t.id] || {};
-    const b = document.createElement("button"); b.className = "row" + (d.done ? " tk-row-done" : "");
-    const n = document.createElement("span"); n.className = "n"; n.textContent = TALK.length - i;
-    const w = document.createElement("span");
-    const v = document.createElement("div"); v.className = "v"; v.textContent = t.title;
-    const j = document.createElement("div"); j.className = "j";
-    j.textContent = md(t.date) + "・" + t.theme + "・" + t.lines.length + "行" + (d.gist != null ? "・内容 " + d.gist + "/" + t.qs.length : "") + (d.done ? "・完了 " + md(d.done) : "");
-    w.appendChild(v); w.appendChild(j); b.appendChild(n); b.appendChild(w);
-    b.addEventListener("click", () => openTalk(t));
-    box.appendChild(b);
-  });
-}
-function lineRow(l, i, onClick) {
-  const t = TK.t;
-  const b = document.createElement("button"); b.className = "row";
-  const n = document.createElement("span"); n.className = "n spk" + (l[0] === "b" ? " b" : ""); n.textContent = t.who[l[0]];
-  const w = document.createElement("span");
-  const v = document.createElement("div"); v.className = "v"; v.textContent = l[1];
-  const j = document.createElement("div"); j.className = "j"; j.textContent = l[2];
-  w.appendChild(v); w.appendChild(j); b.appendChild(n); b.appendChild(w);
-  b.addEventListener("click", onClick);
-  return b;
-}
-const HINTS = {
-  1: "文字なしで2回通して聞く。何の話かつかんだら、下の問題に答える。",
-  2: "スクリプトを見ながら聞き直す。聞き取れなかった行だけタップ。",
-  3: "1行ずつ、音声を追いかけて声に出す。2〜3周が目安。",
-  4: "日本語を見てベトナム語で言う → 録音して聞き比べ → 答えで確認。最後にGPT Voiceで南部の発音チェック。"
-};
-function openTalk(t) {
-  tkStop();
-  TK.t = t; TK.jp = false; TK.sh = 0; TK.plays = 0;
-  $("tkList").hidden = true; $("tkPage").hidden = false;
-  $("tkTitle").textContent = t.title;
-  $("tkMeta").textContent = md(t.date) + "・" + t.theme + "・" + t.whoFull;
-  ["tkLines1", "tkLines2"].forEach(id => {
-    const box = $(id); box.textContent = "";
-    t.lines.forEach((l, i) => box.appendChild(lineRow(l, i, () => { tkStop(); paintNow(i); tkSay(l).then(() => paintNow(-1)); })));
-  });
-  [].slice.call($("tkLines2").querySelectorAll(".j")).forEach(e => { e.hidden = true; });
-  $("tkJp").textContent = "訳を見る";
-  $("tkPlayAll").textContent = "通しで聞く";
-  buildQs(t); buildSpeak(t); paintSh();
-  $("tkGptMsg").textContent = "コピーしてGPTに貼る → 南部の発音で読んでもらう → 自分の要約を訂正してもらう。";
-  paintDone();
-  setStep(1);
-}
-function paintDone() {
-  const d = talkDone[TK.t.id] || {};
-  $("tkDone").textContent = d.done ? "完了済み(" + md(d.done) + ")" : "今日の会話を完了にする";
-}
-function setStep(n) {
-  tkStop(); TK.step = n;
-  [1, 2, 3, 4].forEach(k => { $("tk" + k).hidden = k !== n; });
-  [].slice.call($("tkSteps").children).forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.v) === n)));
-  $("tkHint").textContent = HINTS[n];
-  try { window.scrollTo(0, 0); } catch (e) {}
-}
-$("tkSteps").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setStep(Number(b.dataset.v)); });
-$("tkRate").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
-  TK.rate = Number(b.dataset.v);
-  [].slice.call($("tkRate").children).forEach(x => x.setAttribute("aria-pressed", String(x === b)));
-});
-async function playAll() {
-  tkStop(); const my = TK.run;
-  const t = TK.t;
-  for (let i = 0; i < t.lines.length; i++) {
-    paintNow(i);
-    await tkSay(t.lines[i]); if (my !== TK.run) return;
-    await sleep(500); if (my !== TK.run) return;
-  }
-  paintNow(-1);
-  return true;
-}
-$("tkPlayAll").addEventListener("click", async () => {
-  const ok = await playAll();
-  if (ok) { TK.plays++; $("tkPlayAll").textContent = "もう一回(" + TK.plays + "回聞いた)"; }
-});
-$("tkStop1").addEventListener("click", tkStop);
-$("tkPlayAll2").addEventListener("click", () => { playAll(); });
-$("tkJp").addEventListener("click", () => {
-  TK.jp = !TK.jp; $("tkJp").textContent = TK.jp ? "訳を隠す" : "訳を見る";
-  [].slice.call($("tkLines2").querySelectorAll(".j")).forEach(e => { e.hidden = !TK.jp; });
-});
-function buildQs(t) {
-  const qb = $("tkQs"); qb.textContent = ""; $("tkScore").hidden = true;
-  let done = 0, score = 0;
-  t.qs.forEach((q, qi) => {
-    const wrap = document.createElement("div"); wrap.className = "view";
-    const h = document.createElement("div"); h.className = "jp"; h.textContent = (qi + 1) + ". " + q.q;
-    const ch = document.createElement("div"); ch.className = "choices";
-    shuffle(q.c.slice()).forEach(txt => {
-      const b = document.createElement("button"); b.className = "choice jpc"; b.textContent = txt;
-      b.addEventListener("click", () => {
-        if (wrap.dataset.done) return; wrap.dataset.done = "1";
-        const ok = txt === q.c[0]; if (ok) score++; done++;
-        [].slice.call(ch.children).forEach(c => { c.disabled = true; if (c.textContent === q.c[0]) c.classList.add("ok"); else if (c === b) c.classList.add("ng"); });
-        if (done === t.qs.length) {
-          const sc = $("tkScore"); sc.hidden = false;
-          sc.textContent = t.qs.length + "問中 " + score + " 問正解。" + (score === t.qs.length ? "内容はつかめてる。②確認へ。" : "②確認でスクリプトを見て、間違えた所を聞き直そう。");
-          const d = talkDone[t.id] || {};
-          if (d.gist == null || score > d.gist) { d.gist = score; talkDone[t.id] = d; saveTalk(); }
-        }
-      });
-      ch.appendChild(b);
-    });
-    wrap.appendChild(h); wrap.appendChild(ch); qb.appendChild(wrap);
-  });
-}
-/* Shadowing */
-function paintSh() {
-  const t = TK.t, l = t.lines[TK.sh];
-  $("shPos").textContent = (TK.sh + 1) + " / " + t.lines.length;
-  $("shSpk").textContent = t.who[l[0]];
-  $("shVi").textContent = l[1]; $("shVi").classList.toggle("hidden", !TK.shText);
-  $("shJp").textContent = l[2];
-  $("shCard").classList.toggle("playing", TK.shAuto);
-}
-async function shOne() { const t0 = Date.now(); await tkSay(TK.t.lines[TK.sh]); return Date.now() - t0; }
-async function shLoop() {
-  const my = TK.run;
-  while (TK.shAuto && my === TK.run) {
-    paintSh();
-    const dur = await shOne(); if (my !== TK.run) return;
-    await sleep(Math.max(1500, dur * 1.3 + 700)); if (my !== TK.run) return;
-    if (TK.sh >= TK.t.lines.length - 1) { TK.sh = 0; TK.shAuto = false; $("shAuto").textContent = "自動シャドー"; paintSh(); return; }
-    TK.sh++;
-  }
-}
-$("shAuto").addEventListener("click", () => {
-  if (TK.shAuto) { tkStop(); paintSh(); return; }
-  tkStop(); TK.shAuto = true; $("shAuto").textContent = "停止"; shLoop();
-});
-$("shPrev").addEventListener("click", () => { tkStop(); TK.sh = Math.max(0, TK.sh - 1); paintSh(); shOne(); });
-$("shNext").addEventListener("click", () => { tkStop(); TK.sh = Math.min(TK.t.lines.length - 1, TK.sh + 1); paintSh(); shOne(); });
-$("shOnce").addEventListener("click", () => { tkStop(); paintSh(); shOne(); });
-$("shText").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
-  TK.shText = Number(b.dataset.v);
-  [].slice.call($("shText").children).forEach(x => x.setAttribute("aria-pressed", String(x === b)));
-  paintSh();
-});
-/* Speaking: prompt → say it → record and compare → reveal model */
-let recState = null;
-async function toggleRec(btn, playBtn) {
-  if (recState && recState.btn === btn) { try { recState.rec.stop(); } catch (e) {} return; }
-  if (recState) { try { recState.rec.stop(); } catch (e) {} }
-  if (!navigator.mediaDevices || !window.MediaRecorder) { btn.textContent = "録音非対応"; return; }
-  try {
-    tkStop();
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const rec = new MediaRecorder(stream); const chunks = [];
-    rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
-    rec.onstop = () => {
-      stream.getTracks().forEach(tr => tr.stop());
-      const blob = new Blob(chunks, { type: rec.mimeType || "audio/mp4" });
-      if (playBtn.dataset.url) URL.revokeObjectURL(playBtn.dataset.url);
-      playBtn.dataset.url = URL.createObjectURL(blob); playBtn.disabled = false;
-      btn.setAttribute("aria-pressed", "false"); btn.textContent = "録音し直す";
-      recState = null;
-    };
-    rec.start(); recState = { rec: rec, btn: btn };
-    btn.setAttribute("aria-pressed", "true"); btn.textContent = "■ 止める";
-  } catch (e) { btn.textContent = "マイク不可"; }
-}
-function buildSpeak(t) {
-  const box = $("spItems"); box.textContent = "";
-  t.speak.forEach((sp, i) => {
-    const it = document.createElement("div"); it.className = "sp-item";
-    const q = document.createElement("div"); q.className = "q"; q.textContent = (i + 1) + ". " + sp.q;
-    const a = document.createElement("div"); a.className = "a hidden"; a.textContent = sp.a;
-    const row = document.createElement("div"); row.className = "tk-big";
-    const rec = document.createElement("button"); rec.className = "rec"; rec.textContent = "● 録音"; rec.setAttribute("aria-pressed", "false");
-    const play = document.createElement("button"); play.textContent = "自分の声を聞く"; play.disabled = true;
-    const row2 = document.createElement("div"); row2.className = "tk-big";
-    const show = document.createElement("button"); show.className = "go"; show.textContent = "答えを見る";
-    const hear = document.createElement("button"); hear.textContent = "答えを聞く";
-    rec.addEventListener("click", () => toggleRec(rec, play));
-    play.addEventListener("click", () => { if (play.dataset.url) { tkStop(); new Audio(play.dataset.url).play().catch(() => {}); } });
-    show.addEventListener("click", () => { a.classList.remove("hidden"); speak(sp.a, { rate: TK.rate }); });
-    hear.addEventListener("click", () => { tkStop(); speak(sp.a, { rate: TK.rate }); });
-    row.appendChild(rec); row.appendChild(play); row2.appendChild(show); row2.appendChild(hear);
-    it.appendChild(q); it.appendChild(a); it.appendChild(row); it.appendChild(row2);
-    box.appendChild(it);
-  });
-}
-function gptText(t) {
-  const script = t.lines.map(l => (l[0] === "a" ? "A" : "B") + ": " + l[1]).join("\n");
-  return "これからベトナム語の会話練習をします。説明は日本語、練習はベトナム語で。南部(サイゴン)方言だけ使ってください。\n\n" +
-    "1. 下の会話を、南部の発音で自然な速さで読んでください。Aは女性(" + t.who.a + ")、Bは男性(" + t.who.b + ")として声を分けて。\n" +
-    "2. 読み終わったら、私がベトナム語で内容を2〜3文で要約します。声調・発音・言い回しを南部基準で厳しく訂正してください。遠慮した言い方はいりません。\n" +
-    "3. 次に、Aの役をあなたが少し変えながら演じて、私がBとして答えるロールプレイを3往復。\n" +
-    "4. 最後に、私の発音の弱点を3つまとめてください。\n\n" +
-    "会話(" + t.title + "):\n" + script;
-}
-$("tkGpt").addEventListener("click", async () => {
-  const txt = gptText(TK.t); let ok = false;
-  try { await navigator.clipboard.writeText(txt); ok = true; } catch (e) {}
-  $("tkGptMsg").textContent = ok ? "コピーした。GPTアプリに貼り付けてから、音声モードに切り替えて始めて。" : "自動でコピーできなかった。";
-});
-$("tkDone").addEventListener("click", () => {
-  const d = talkDone[TK.t.id] || {};
-  if (!d.done) { d.done = ymd(); talkDone[TK.t.id] = d; saveTalk(); }
-  paintDone();
-});
-$("tkBack").addEventListener("click", openTalkList);
-
 /* Backup: move marks, review schedule and scores between apps or devices. */
-const BK_KEYS = ["nghe-noi-marks", "nghe-noi-srs", "nghe-noi-hist", "nghe-noi-read", "nghe-noi-log", "nghe-noi-talk"];
+const BK_KEYS = ["nghe-noi-marks", "nghe-noi-srs", "nghe-noi-hist", "nghe-noi-read", "nghe-noi-log"];
 $("bkOut").addEventListener("click", async () => {
   const o = { v: 1 };
   BK_KEYS.forEach(k => { try { o[k] = localStorage.getItem(k); } catch (e) {} });
@@ -2005,7 +1675,6 @@ $("bkIn").addEventListener("click", () => {
     try { hist = JSON.parse(o["nghe-noi-hist"] || "[]") || []; } catch (e) {}
     try { readDone = JSON.parse(o["nghe-noi-read"] || "{}") || {}; } catch (e) {}
     try { LOG = JSON.parse(o["nghe-noi-log"] || "null") || { laps: {}, days: {} }; LOG.laps = LOG.laps || {}; LOG.days = LOG.days || {}; } catch (e) {}
-    try { talkDone = JSON.parse(o["nghe-noi-talk"] || "{}") || {}; } catch (e) {}
     render(); updateDue();
     $("bkMsg").textContent = "読み込んだ。★ " + marks.size + "件、復習の記録 " + Object.keys(srs).length + "件。";
   } catch (e) { $("bkMsg").textContent = "読み込めなかった。コードを最初から最後まで全部貼り付けたか確認して。"; }
