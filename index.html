@@ -66,6 +66,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .ety { border: 0; background: transparent; text-align: left; padding: 0; color: var(--muted); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
 .etyd { border: 0; background: var(--surface-2); text-align: left; padding: 10px 12px; border-radius: 10px; color: var(--fg); font-family: var(--font-jp); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
 [hidden] { display: none !important; }
+.kw { color: var(--accent); text-decoration: underline dotted; text-underline-offset: 3px; }
+.kwbox { position: sticky; top: 8px; z-index: 5; background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; padding: 10px 12px; font-size: 15px; }
+.kwbox .j { font-family: var(--font-jp); color: var(--muted); font-size: 13px; margin-top: 4px; }
 .streak { display: flex; gap: 8px; flex-wrap: wrap; }
 .streak span { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 13px; }
 .streak b { color: var(--accent); }
@@ -336,7 +339,10 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
 
   <section class="view" id="readView" hidden aria-label="読解">
     <div class="view" id="rdList">
-      <p class="hint">短いメールや議事録を読んで、問題に答える。1行タップでその行の音声、「訳を見る」で日本語。まずは訳を見ずに読んでみる。</p>
+      <p class="hint">覚えた単語だけで書いた文章を読んで、問題に答える。1行タップでその行の音声、色の付いた単語をタップすると意味と漢越語。「訳を見る」で日本語。まずは訳を見ずに読んでみる。</p>
+      <h2>続きもの「ホアンの南部日記」(毎日1話)</h2>
+      <div class="list" id="stItems"></div>
+      <h2>短い文章</h2>
       <div class="list" id="rdItems"></div>
     </div>
     <div class="view" id="rdPage" hidden>
@@ -345,6 +351,7 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
         <button class="once" id="rdAll" style="border-style:solid">全文を聞く</button>
         <button class="once" id="rdJpBtn" style="border-style:solid" aria-pressed="false">訳を見る</button>
       </div>
+      <div class="kwbox" id="rdWord" hidden></div>
       <div class="list" id="rdLines"></div>
       <h2>問題</h2>
       <div class="view" id="rdQs"></div>
@@ -1515,34 +1522,519 @@ const READ = [
 let readDone = {};
 try { readDone = JSON.parse(localStorage.getItem("nghe-noi-read") || "{}") || {}; } catch (e) { readDone = {}; }
 const RD = { p: null, jp: false };
+/* Story: one chapter a day, written only with words already learned. */
+const STORY = [
+ {
+  "id": "st1",
+  "title": "第1話 はじめての商談",
+  "day": 5,
+  "lines": [
+   [
+    "Hôm nay Hoàng có cuộc họp với một khách hàng mới.",
+    "今日、ホアンは新しいお客さんと会議がある。"
+   ],
+   [
+    "Khách hàng là chị Thảo, bên công ty nhập khẩu thiết bị từ Nhật Bản.",
+    "お客さんはタオさん。日本から機器を輸入している会社の人だ。"
+   ],
+   [
+    "Hoàng: Dạ, em chào chị. Em là Hoàng, bên công ty DTNC ạ.",
+    "ホアン「はじめまして。DTNCのホアンです」"
+   ],
+   [
+    "Thảo: Chào em. Bên chị có sản phẩm mới, cần chứng nhận hợp quy trước khi bán ra thị trường.",
+    "タオ「こんにちは。新製品があって、販売前に適合認証が必要なの」"
+   ],
+   [
+    "Hoàng: Dạ, chị cho em xin thông số kỹ thuật và hồ sơ sản phẩm nghen.",
+    "ホアン「技術仕様と製品の書類をいただけますか」"
+   ],
+   [
+    "Thảo: Được. Thời gian thử nghiệm khoảng bao nhiêu ngày vậy em?",
+    "タオ「いいわよ。試験期間は何日くらい?」"
+   ],
+   [
+    "Hoàng: Dạ, khoảng hai tuần ạ. Sau đó một tuần thì có kết quả.",
+    "ホアン「2週間くらいです。その1週間後に結果が出ます」"
+   ],
+   [
+    "Thảo nói hơi nhanh, nên Hoàng chưa hiểu rõ.",
+    "タオさんが少し早口だったので、ホアンはよく分からなかった。"
+   ],
+   [
+    "Hoàng: Em xin lỗi, chị nói chậm lại giùm em được hông ạ?",
+    "ホアン「すみません、もう少しゆっくり話していただけますか」"
+   ],
+   [
+    "Thảo: Chị hỏi là chi phí bao nhiêu vậy em?",
+    "タオ「費用はいくらかって聞いたの」"
+   ],
+   [
+    "Hoàng: Dạ, đơn giá là hai triệu đồng một mẫu, chưa bao gồm thuế VAT ạ.",
+    "ホアン「単価は1サンプル200万ドンで、VATは別です」"
+   ],
+   [
+    "Thảo: Nếu chị gửi năm mẫu thì có giảm giá hông em?",
+    "タオ「5サンプル出したら値引きはある?」"
+   ],
+   [
+    "Hoàng: Dạ, để em kiểm tra rồi báo lại chị trước năm giờ chiều nay nghen.",
+    "ホアン「確認して、今日の5時までにご連絡しますね」"
+   ],
+   [
+    "Sau cuộc họp, Hoàng gửi email xác nhận và báo giá cho chị Thảo.",
+    "会議の後、ホアンはタオさんに確認メールと見積を送った。"
+   ],
+   [
+    "Chiều đó, chị Thảo gọi lại: Chị đồng ý, tuần sau chị gửi mẫu cho em nghen.",
+    "その日の午後、タオさんから電話があった。「OKよ、来週サンプルを送るね」"
+   ],
+   [
+    "Hoàng rất vui. Đây là khách hàng đầu tiên của anh ở miền Nam.",
+    "ホアンはとても嬉しかった。南部で初めてのお客さんだ。"
+   ]
+  ],
+  "qs": [
+   {
+    "q": "タオさんの会社は何をしている?",
+    "c": [
+     "日本から機器を輸入している",
+     "試験所を運営している",
+     "日本で製品を作っている",
+     "通関の代行をしている"
+    ]
+   },
+   {
+    "q": "ホアンが聞き返したのはなぜ?",
+    "c": [
+     "タオさんが少し早口だったから",
+     "電話の音が小さかったから",
+     "英語で話されたから",
+     "資料がなかったから"
+    ]
+   },
+   {
+    "q": "試験の単価は?",
+    "c": [
+     "1サンプル200万ドン、VAT別",
+     "1サンプル200万ドン、VAT込み",
+     "1セット200万ドン",
+     "合計1,500万ドン"
+    ]
+   },
+   {
+    "q": "最後にタオさんは何と言った?",
+    "c": [
+     "同意して、来週サンプルを送る",
+     "もっと値引きしてほしい",
+     "契約は来月にしたい",
+     "他の会社に頼む"
+    ]
+   }
+  ],
+  "range": "Day 1〜5"
+ },
+ {
+  "id": "st2",
+  "title": "第2話 試験と、ひとつの不合格",
+  "day": 10,
+  "lines": [
+   [
+    "Thứ hai, mẫu thử của chị Thảo được vận chuyển tới phòng thí nghiệm.",
+    "月曜、タオさんの試験サンプルがラボへ輸送された。"
+   ],
+   [
+    "Nhưng mẫu đang ở hải quan, nên Hoàng phải chờ thêm hai ngày.",
+    "でもサンプルが税関にあって、ホアンはさらに2日待つことになった。"
+   ],
+   [
+    "Anh Tuấn là người phụ trách thử nghiệm tương thích điện từ.",
+    "トゥアンさんはEMC試験の担当者だ。"
+   ],
+   [
+    "Tuấn hỏi: Mẫu này dùng pin hay nguồn điện vậy anh?",
+    "トゥアン「このサンプルは電池ですか、電源ですか」"
+   ],
+   [
+    "Hoàng: Dùng nguồn điện, điện áp hai trăm hai mươi.",
+    "ホアン「電源だよ。電圧は220」"
+   ],
+   [
+    "Tuấn: Còn phần mềm thì sao? Em cần cấu hình để thử nghiệm.",
+    "トゥアン「ソフトはどうですか。試験に設定が必要です」"
+   ],
+   [
+    "Hoàng gửi email hỏi chị Thảo, và chị trả lời ngay trong ngày.",
+    "ホアンがメールで聞くと、タオさんはその日のうちに返事をくれた。"
+   ],
+   [
+    "Một tuần sau, kết quả thử nghiệm có rồi.",
+    "1週間後、試験結果が出た。"
+   ],
+   [
+    "Nhiều hạng mục đạt, nhưng còn một hạng mục chưa đạt.",
+    "多くの項目は合格したが、1項目だけまだ不合格だった。"
+   ],
+   [
+    "Hoàng gọi điện cho chị Thảo để giải thích.",
+    "ホアンは説明のためにタオさんに電話した。"
+   ],
+   [
+    "Hoàng: Chị ơi, kết quả có một vấn đề nhỏ ạ. Em giải thích cụ thể nghen.",
+    "ホアン「結果に小さな問題があります。具体的に説明しますね」"
+   ],
+   [
+    "Thảo: Tức là sản phẩm chưa đạt, đúng hông em?",
+    "タオ「つまり、製品はまだ不合格ってこと?」"
+   ],
+   [
+    "Hoàng: Dạ, nhưng chị yên tâm. Bên em sẽ đề xuất giải pháp và thử lại ạ.",
+    "ホアン「はい、でもご安心ください。解決策をご提案して、再試験します」"
+   ],
+   [
+    "Hai bên thảo luận và nhất trí thử lại vào tuần sau.",
+    "話し合って、来週再試験することで一致した。"
+   ],
+   [
+    "Tối đó, chị Thảo mời Hoàng đi ăn ở một quán gần công ty.",
+    "その夜、タオさんはホアンを会社の近くのお店に食事に誘った。"
+   ],
+   [
+    "Thảo: Một, hai, ba, dô! Cảm ơn em đã giải thích rõ ràng nghen.",
+    "タオ「1、2、3、乾杯! はっきり説明してくれてありがとう」"
+   ],
+   [
+    "Hoàng cảm thấy vui, vì khách hàng tin bên mình.",
+    "お客さんが自分たちを信じてくれて、ホアンは嬉しかった。"
+   ]
+  ],
+  "qs": [
+   {
+    "q": "サンプルが遅れた理由は?",
+    "c": [
+     "税関にあったから",
+     "梱包に問題があったから",
+     "担当者が休みだったから",
+     "電圧が合わなかったから"
+    ]
+   },
+   {
+    "q": "試験結果はどうだった?",
+    "c": [
+     "1項目だけ不合格",
+     "全部合格",
+     "全部不合格",
+     "まだ出ていない"
+    ]
+   },
+   {
+    "q": "話し合って何を決めた?",
+    "c": [
+     "来週再試験する",
+     "契約をやめる",
+     "値引きする",
+     "別のラボに頼む"
+    ]
+   },
+   {
+    "q": "その夜、タオさんは何をした?",
+    "c": [
+     "ホアンを食事に誘った",
+     "報告書を送った",
+     "上司に電話した",
+     "サンプルを取りに来た"
+    ]
+   }
+  ],
+  "range": "Day 6〜10"
+ },
+ {
+  "id": "st3",
+  "title": "第3話 オンライン会議と証明書",
+  "day": 15,
+  "lines": [
+   [
+    "Thứ tư tuần sau, hai bên họp trực tuyến để xem kết quả thử lại.",
+    "翌週の水曜、再試験の結果を見るためにオンライン会議をした。"
+   ],
+   [
+    "Lúc đầu, đường truyền yếu quá, Hoàng nghe không rõ.",
+    "最初は回線が弱すぎて、ホアンはよく聞こえなかった。"
+   ],
+   [
+    "Hoàng: Chị ơi, em bị mất kết nối, để em đăng nhập lại nghen.",
+    "ホアン「接続が切れたので、ログインし直しますね」"
+   ],
+   [
+    "Sau đó, Hoàng chia sẻ màn hình để giải thích kết quả.",
+    "その後、ホアンは画面を共有して結果を説明した。"
+   ],
+   [
+    "Hoàng: Bên em đã thay đổi linh kiện trên bo mạch, nên nhiễu đã giảm nhiều ạ.",
+    "ホアン「基板上の部品を変更したので、ノイズがかなり減りました」"
+   ],
+   [
+    "Hoàng: Lần này, kết quả phát xạ nằm trong giới hạn ạ.",
+    "ホアン「今回は、エミッションの結果が限度値内です」"
+   ],
+   [
+    "Thảo: Vậy là sản phẩm đạt rồi, đúng hông em?",
+    "タオ「じゃあ製品は合格ってことね?」"
+   ],
+   [
+    "Hoàng: Dạ, đúng rồi ạ. Bước tiếp theo là nộp hồ sơ cho tổ chức chứng nhận.",
+    "ホアン「その通りです。次のステップは認証機関への書類提出です」"
+   ],
+   [
+    "Thảo: Giấy chứng nhận có hiệu lực bao lâu vậy em?",
+    "タオ「証明書の有効期間はどのくらい?」"
+   ],
+   [
+    "Hoàng: Dạ, ba năm ạ. Sau đó chị cần gia hạn.",
+    "ホアン「3年です。その後は更新が必要です」"
+   ],
+   [
+    "Thảo hỏi thêm về thanh toán.",
+    "タオさんは支払いについても聞いた。"
+   ],
+   [
+    "Thảo: Bên chị thanh toán bằng chuyển khoản được hông em?",
+    "タオ「振込で支払ってもいい?」"
+   ],
+   [
+    "Hoàng: Dạ được ạ. Hạn thanh toán là ba mươi ngày kể từ ngày xuất hóa đơn ạ.",
+    "ホアン「大丈夫です。支払期限は請求書の発行日から30日です」"
+   ],
+   [
+    "Thảo: Em xuất hóa đơn đỏ cho chị nghen.",
+    "タオ「VATインボイスを発行してね」"
+   ],
+   [
+    "Cuối tháng, giấy chứng nhận được cấp, và chị Thảo có thể gắn dấu hợp quy lên sản phẩm.",
+    "月末に証明書が発行され、タオさんは製品に適合マークを付けられるようになった。"
+   ],
+   [
+    "Theo quy định hiện hành, mỗi lô hàng nhập khẩu sau này vẫn cần kiểm tra.",
+    "現行の規定では、今後も輸入ロットごとに検査が必要だ。"
+   ]
+  ],
+  "qs": [
+   {
+    "q": "会議の最初に何が起きた?",
+    "c": [
+     "回線が弱くて聞こえなかった",
+     "マイクが壊れた",
+     "タオさんが遅刻した",
+     "資料が届かなかった"
+    ]
+   },
+   {
+    "q": "何を変えてノイズを減らした?",
+    "c": [
+     "基板上の部品",
+     "ソフトの設定",
+     "電源の電圧",
+     "製品の外装"
+    ]
+   },
+   {
+    "q": "支払いの方法と期限は?",
+    "c": [
+     "振込で、請求書発行から30日",
+     "現金で、今月末まで",
+     "振込で、試験の前に全額",
+     "現金で、30日以内"
+    ]
+   },
+   {
+    "q": "証明書の有効期間は?",
+    "c": [
+     "3年",
+     "1年",
+     "2年",
+     "5年"
+    ]
+   }
+  ],
+  "range": "Day 11〜15"
+ },
+ {
+  "id": "st4",
+  "title": "第4話 クレーム、そして南部の新生活",
+  "day": 20,
+  "lines": [
+   [
+    "Một tháng sau, chị Thảo gọi điện cho Hoàng.",
+    "1か月後、タオさんがホアンに電話してきた。"
+   ],
+   [
+    "Thảo: Em ơi, một khách hàng của chị khiếu nại. Vỏ sản phẩm bị trầy, có cái còn bị bể.",
+    "タオ「うちのお客さんからクレームが来たの。外装に傷があって、割れているものもあるの」"
+   ],
+   [
+    "Hoàng: Dạ, em thành thật xin lỗi chị. Em sẽ điều tra nguyên nhân ngay ạ.",
+    "ホアン「誠に申し訳ありません。すぐに原因を調査します」"
+   ],
+   [
+    "Hoàng xin ý kiến sếp, rồi phối hợp với phòng kỹ thuật.",
+    "ホアンは上司に相談して、技術部と連携した。"
+   ],
+   [
+    "Nguyên nhân là đóng gói chưa tốt trong lúc vận chuyển, không phải lỗi của bên Hoàng.",
+    "原因は輸送中の梱包が不十分だったことで、ホアン側のミスではなかった。"
+   ],
+   [
+    "Dù vậy, Hoàng vẫn đề nghị một biện pháp tạm thời để hỗ trợ chị Thảo.",
+    "それでもホアンは、タオさんを支えるために一時的な対策を提案した。"
+   ],
+   [
+    "Thảo: Cảm ơn em. Em làm việc rất chuyên nghiệp.",
+    "タオ「ありがとう。仕事がとてもプロね」"
+   ],
+   [
+    "Sau chuyện này, hai bên tin nhau hơn.",
+    "この件のあと、双方はもっと信頼し合うようになった。"
+   ],
+   [
+    "Chị Thảo còn giới thiệu Hoàng với một đối tác ở Bình Dương.",
+    "タオさんは、ビンズオンの取引先にもホアンを紹介してくれた。"
+   ],
+   [
+    "Cuối tuần, Hoàng chuyển nhà vào Sài Gòn.",
+    "週末、ホアンはサイゴンに引っ越した。"
+   ],
+   [
+    "Anh thuê một căn hộ ở quận Bảy, gần chợ và siêu thị.",
+    "7区にアパートを借りた。市場とスーパーの近くだ。"
+   ],
+   [
+    "Lúc đầu, Hoàng chưa quen kẹt xe và thời tiết nóng.",
+    "最初、ホアンは渋滞と暑い天気に慣れなかった。"
+   ],
+   [
+    "Nhưng hàng xóm rất vui, chỉ đường cho anh: Đi thẳng rồi quẹo trái là tới quán cà phê nghen.",
+    "でも近所の人は明るくて、道を教えてくれた。「まっすぐ行って左に曲がるとカフェだよ」"
+   ],
+   [
+    "Theo Hoàng, ở miền Nam rất vui, người ở đây cũng rất dễ thương.",
+    "ホアンにとって、南部はとても楽しい。ここの人もとても優しい。"
+   ],
+   [
+    "Mỗi ngày anh nghe và nói thêm một chút, nên hiểu nhiều hơn.",
+    "毎日少しずつ聞いて話すので、分かることが増えていく。"
+   ],
+   [
+    "Hoàng hy vọng sẽ hợp tác lâu dài với chị Thảo và nhiều khách hàng miền Nam.",
+    "ホアンは、タオさんや南部の多くのお客さんと長く協力していきたいと思っている。"
+   ]
+  ],
+  "qs": [
+   {
+    "q": "クレームの内容は?",
+    "c": [
+     "外装の傷と割れ",
+     "試験結果の誤り",
+     "請求金額の間違い",
+     "納期の遅れ"
+    ]
+   },
+   {
+    "q": "原因は何だった?",
+    "c": [
+     "輸送中の梱包が不十分だった",
+     "ホアンの会社のミス",
+     "製品の設計ミス",
+     "税関での検査"
+    ]
+   },
+   {
+    "q": "ホアンはどこに部屋を借りた?",
+    "c": [
+     "7区の、市場とスーパーの近く",
+     "1区の、会社の近く",
+     "ビンズオンの工場の近く",
+     "ハノイのホアキエム"
+    ]
+   },
+   {
+    "q": "ホアンは南部の生活をどう感じている?",
+    "c": [
+     "とても楽しい",
+     "まだ慣れなくてつらい",
+     "暑すぎて嫌",
+     "ハノイの方がいい"
+    ]
+   }
+  ],
+  "range": "Day 16〜20"
+ }
+];
+const KW_SKIP = new Set(["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín", "mười", "đã", "đang", "sẽ", "và", "với", "cũng", "thì", "rồi", "nên", "vì", "nếu", "rất", "hơi", "lắm", "cái", "bộ", "giờ", "chưa", "vẫn", "thêm", "nữa", "trước", "sau", "mỗi", "ngày", "tuần", "tháng", "biết", "cần", "hỏi", "no", "lo", "gần", "xa"]);
+let KW_RE = null, KW_MAP = null;
+function kwRe() {
+  if (KW_RE) return KW_RE;
+  KW_MAP = {};
+  DATA.words.forEach(w => { KW_MAP[w[0].toLowerCase()] = w; });
+  const ws = DATA.words.map(w => w[0]).filter(w => !KW_SKIP.has(w.toLowerCase())).sort((a, b) => b.length - a.length);
+  KW_RE = new RegExp("(^|[^\\p{L}])(" + ws.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")(?=$|[^\\p{L}])", "giu");
+  return KW_RE;
+}
+function fillKw(el, text) {
+  el.textContent = "";
+  let re; try { re = kwRe(); } catch (e) { el.textContent = text; return; }
+  re.lastIndex = 0; let last = 0, m;
+  while ((m = re.exec(text))) {
+    const start = m.index + m[1].length, w = m[2];
+    if (start > last) el.appendChild(document.createTextNode(text.slice(last, start)));
+    const sp = document.createElement("span"); sp.className = "kw"; sp.textContent = w;
+    sp.addEventListener("click", e => { e.stopPropagation(); showKw(w); });
+    el.appendChild(sp); last = start + w.length;
+    if (re.lastIndex === m.index) re.lastIndex++;
+  }
+  if (last < text.length) el.appendChild(document.createTextNode(text.slice(last)));
+}
+function showKw(w) {
+  const it = KW_MAP && KW_MAP[w.toLowerCase()]; if (!it) return;
+  const box = $("rdWord"); box.hidden = false; box.textContent = "";
+  const a = document.createElement("strong"); a.textContent = it[0];
+  const b = document.createElement("span"); b.textContent = "　" + it[1] + "(Day " + (it[2] || 1) + ")";
+  box.appendChild(a); box.appendChild(b);
+  const e = ETY[it[0]];
+  if (e) { const c = document.createElement("div"); c.className = "j"; c.textContent = etyText(e) + (e[1] ? "　" + e[1] : ""); box.appendChild(c); }
+  speak(it[0]);
+}
+function listRow(p, i, box, sub) {
+  const b = document.createElement("button"); b.className = "row";
+  const n = document.createElement("span"); n.className = "n"; n.textContent = i + 1;
+  const w = document.createElement("span");
+  const v = document.createElement("span"); v.className = "v"; v.textContent = p.title;
+  const j = document.createElement("div"); j.className = "j";
+  const d = readDone[p.id];
+  j.textContent = sub + "・" + p.lines.length + "行・問題" + p.qs.length + (d != null ? "・最高 " + d + "/" + p.qs.length : "");
+  w.appendChild(v); w.appendChild(j); b.appendChild(n); b.appendChild(w);
+  b.addEventListener("click", () => openPassage(p));
+  box.appendChild(b);
+}
 function openReadList() {
   stop();
   $("rdList").hidden = false; $("rdPage").hidden = true;
+  const sbox = $("stItems"); sbox.textContent = "";
+  STORY.filter(p => p.day <= currentDay()).slice().reverse().forEach((p, i, arr) => listRow(p, arr.length - 1 - i, sbox, p.range + "の単語"));
   const box = $("rdItems"); box.textContent = "";
-  READ.forEach((p, i) => {
-    const b = document.createElement("button"); b.className = "row";
-    const n = document.createElement("span"); n.className = "n"; n.textContent = i + 1;
-    const w = document.createElement("span");
-    const v = document.createElement("span"); v.className = "v"; v.textContent = p.title;
-    const j = document.createElement("div"); j.className = "j";
-    const d = readDone[p.id];
-    j.textContent = "Day " + p.day + " まで・" + p.lines.length + "行・問題" + p.qs.length + (d != null ? "・最高 " + d + "/" + p.qs.length : "");
-    w.appendChild(v); w.appendChild(j); b.appendChild(n); b.appendChild(w);
-    b.addEventListener("click", () => openPassage(p));
-    box.appendChild(b);
-  });
+  READ.forEach((p, i) => listRow(p, i, box, "Day " + p.day + " まで"));
 }
 function openPassage(p) {
   RD.p = p; RD.jp = false;
   $("rdList").hidden = true; $("rdPage").hidden = false;
-  $("rdTitle").textContent = p.title; $("rdMeta").textContent = "Day " + p.day + " まで";
+  $("rdTitle").textContent = p.title; $("rdMeta").textContent = p.range ? p.range + "の単語" : "Day " + p.day + " まで";
+  $("rdWord").hidden = true;
   $("rdJpBtn").textContent = "訳を見る"; $("rdScore").hidden = true;
   const box = $("rdLines"); box.textContent = "";
   p.lines.forEach((l, i) => {
     const b = document.createElement("button"); b.className = "row";
     const n = document.createElement("span"); n.className = "n"; n.textContent = i + 1;
     const w = document.createElement("span");
-    const v = document.createElement("span"); v.className = "v"; v.textContent = l[0];
+    const v = document.createElement("span"); v.className = "v"; fillKw(v, l[0]);
     const j = document.createElement("div"); j.className = "j"; j.textContent = l[1]; j.hidden = true;
     w.appendChild(v); w.appendChild(j); b.appendChild(n); b.appendChild(w);
     b.addEventListener("click", () => speak(l[0]));
