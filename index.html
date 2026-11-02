@@ -67,7 +67,16 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .etyd { border: 0; background: var(--surface-2); text-align: left; padding: 10px 12px; border-radius: 10px; color: var(--fg); font-family: var(--font-jp); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
 [hidden] { display: none !important; }
 .kw { color: var(--accent); text-decoration: underline dotted; text-underline-offset: 3px; }
-.kwbox { position: sticky; top: 8px; z-index: 5; background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; padding: 10px 12px; font-size: 15px; }
+.kwbox { position: sticky; top: 8px; z-index: 5; background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; padding: 10px 48px 10px 12px; font-size: 15px; box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+.kwbox .tj { font-family: var(--font-jp); font-size: 15px; }
+.kwbox .again { margin-top: 8px; border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 6px 14px; font-size: 13px; color: var(--fg); }
+.kwx { position: absolute; top: 6px; right: 6px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--surface-2); color: var(--muted); font-size: 15px; }
+.prose { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px 16px; }
+.para { margin: 12px 0; font-size: 17px; line-height: 1.8; overflow-wrap: anywhere; }
+.spk { color: var(--muted); font-weight: 700; }
+.sen { border-radius: 6px; cursor: pointer; }
+.sen.on { background: var(--surface-2); box-shadow: 0 0 0 3px var(--surface-2); }
+.tr { display: block; font-family: var(--font-jp); font-size: 13px; line-height: 1.6; color: var(--muted); }
 .kwbox .j { font-family: var(--font-jp); color: var(--muted); font-size: 13px; margin-top: 4px; }
 .streak { display: flex; gap: 8px; flex-wrap: wrap; }
 .streak span { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 13px; }
@@ -339,7 +348,7 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
 
   <section class="view" id="readView" hidden aria-label="読解">
     <div class="view" id="rdList">
-      <p class="hint">覚えた単語だけで書いた文章を読んで、問題に答える。1行タップでその行の音声、色の付いた単語をタップすると意味と漢越語。「訳を見る」で日本語。まずは訳を見ずに読んでみる。</p>
+      <p class="hint">覚えた単語だけで書いた文章を読んで、問題に答える。文をタップすると音声とその文の訳、色の付いた単語をタップすると意味と漢越語が上に出る(✕で閉じる)。「全文を聞く」は1文ずつ読み上げて、もう一度押すと止まる。</p>
       <h2>続きもの「ホアンの南部日記」(毎日1話)</h2>
       <div class="list" id="stItems"></div>
       <h2>短い文章</h2>
@@ -348,10 +357,10 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
     <div class="view" id="rdPage" hidden>
       <div class="rv-head"><strong id="rdTitle"></strong><span id="rdMeta"></span></div>
       <div class="opts" style="grid-template-columns:1fr 1fr">
-        <button class="once" id="rdAll" style="border-style:solid">全文を聞く</button>
+        <button class="once" id="rdAll" style="border-style:solid">▶ 全文を聞く</button>
         <button class="once" id="rdJpBtn" style="border-style:solid" aria-pressed="false">訳を見る</button>
       </div>
-      <div class="kwbox" id="rdWord" hidden></div>
+      <div class="kwbox" id="rdWord" hidden><div id="rdWordBody"></div><button class="kwx" id="rdWordX" aria-label="閉じる">✕</button></div>
       <div class="list" id="rdLines"></div>
       <h2>問題</h2>
       <div class="view" id="rdQs"></div>
@@ -923,6 +932,7 @@ async function hold(ms) {
 const wait = ms => state.hold ? hold(ms) : sleep(ms);
 function stop() {
   state.playing = false; state.run++;
+  try { if (RD.playing) { RD.run++; RD.playing = false; paintRdAll(); } } catch (e) {}
   try { speechSynthesis.cancel(); } catch (e) {}
 }
 async function loop() {
@@ -1521,7 +1531,41 @@ const READ = [
 ];
 let readDone = {};
 try { readDone = JSON.parse(localStorage.getItem("nghe-noi-read") || "{}") || {}; } catch (e) { readDone = {}; }
-const RD = { p: null, jp: false };
+const RD = { p: null, jp: false, run: 0, playing: false, sel: null };
+function rdStopPlay() { RD.run++; RD.playing = false; try { speechSynthesis.cancel(); } catch (e) {} paintRdAll(); }
+function paintRdAll() { $("rdAll").textContent = RD.playing ? "■ 停止" : "▶ 全文を聞く"; }
+function rdLineText(l) { const m = l[0].match(/^(\S{1,12}):\s+(.*)$/); return m ? { spk: m[1], text: m[2] } : { spk: "", text: l[0] }; }
+function rdSelect(i) {
+  RD.sel = i;
+  [].slice.call($("rdLines").querySelectorAll(".sen")).forEach(e => e.classList.toggle("on", Number(e.dataset.i) === i));
+}
+function rdInfo(build) {
+  const body = $("rdWordBody"); body.textContent = ""; build(body); $("rdWord").hidden = false;
+}
+function rdCloseInfo() { $("rdWord").hidden = true; rdSelect(null); }
+function rdShowSentence(i) {
+  const l = RD.p.lines[i];
+  rdInfo(body => {
+    const a = document.createElement("div"); a.className = "tj"; a.textContent = l[1];
+    const b = document.createElement("button"); b.className = "again"; b.textContent = "▶ もう一回";
+    b.addEventListener("click", () => { rdStopPlay(); speak(rdLineText(l).text); });
+    body.appendChild(a); body.appendChild(b);
+  });
+}
+async function rdPlayAll() {
+  if (RD.playing) { rdStopPlay(); return; }
+  const p = RD.p; if (!p) return;
+  const my = ++RD.run; RD.playing = true; paintRdAll();
+  const start = RD.sel != null ? RD.sel : 0;
+  for (let i = start; i < p.lines.length; i++) {
+    rdSelect(i);
+    const el = $("rdLines").querySelector('.sen[data-i="' + i + '"]');
+    try { if (el) el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) {}
+    await speak(rdLineText(p.lines[i]).text); if (my !== RD.run) return;
+    await sleep(400); if (my !== RD.run) return;
+  }
+  RD.playing = false; rdSelect(null); paintRdAll();
+}
 /* Story: one chapter a day, written only with words already learned. */
 const STORY = [
  {
@@ -1995,12 +2039,14 @@ function fillKw(el, text) {
 }
 function showKw(w) {
   const it = KW_MAP && KW_MAP[w.toLowerCase()]; if (!it) return;
-  const box = $("rdWord"); box.hidden = false; box.textContent = "";
-  const a = document.createElement("strong"); a.textContent = it[0];
-  const b = document.createElement("span"); b.textContent = "　" + it[1] + "(Day " + (it[2] || 1) + ")";
-  box.appendChild(a); box.appendChild(b);
-  const e = ETY[it[0]];
-  if (e) { const c = document.createElement("div"); c.className = "j"; c.textContent = etyText(e) + (e[1] ? "　" + e[1] : ""); box.appendChild(c); }
+  rdStopPlay(); rdSelect(null);
+  rdInfo(box => {
+    const a = document.createElement("strong"); a.textContent = it[0];
+    const b = document.createElement("span"); b.className = "tj"; b.textContent = "　" + it[1] + "(Day " + (it[2] || 1) + ")";
+    box.appendChild(a); box.appendChild(b);
+    const e = ETY[it[0]];
+    if (e) { const c = document.createElement("div"); c.className = "j"; c.textContent = etyText(e) + (e[1] ? "　" + e[1] : ""); box.appendChild(c); }
+  });
   speak(it[0]);
 }
 function listRow(p, i, box, sub) {
@@ -2027,18 +2073,21 @@ function openPassage(p) {
   RD.p = p; RD.jp = false;
   $("rdList").hidden = true; $("rdPage").hidden = false;
   $("rdTitle").textContent = p.title; $("rdMeta").textContent = p.range ? p.range + "の単語" : "Day " + p.day + " まで";
-  $("rdWord").hidden = true;
+  rdStopPlay(); RD.sel = null; $("rdWord").hidden = true;
   $("rdJpBtn").textContent = "訳を見る"; $("rdScore").hidden = true;
-  const box = $("rdLines"); box.textContent = "";
+  const box = $("rdLines"); box.textContent = ""; box.className = "prose";
   p.lines.forEach((l, i) => {
-    const b = document.createElement("button"); b.className = "row";
-    const n = document.createElement("span"); n.className = "n"; n.textContent = i + 1;
-    const w = document.createElement("span");
-    const v = document.createElement("span"); v.className = "v"; fillKw(v, l[0]);
-    const j = document.createElement("div"); j.className = "j"; j.textContent = l[1]; j.hidden = true;
-    w.appendChild(v); w.appendChild(j); b.appendChild(n); b.appendChild(w);
-    b.addEventListener("click", () => speak(l[0]));
-    box.appendChild(b);
+    const t = rdLineText(l);
+    const para = document.createElement("p"); para.className = "para";
+    if (t.spk) { const sp = document.createElement("span"); sp.className = "spk"; sp.textContent = t.spk + ": "; para.appendChild(sp); }
+    const sen = document.createElement("span"); sen.className = "sen"; sen.dataset.i = i; fillKw(sen, t.text);
+    sen.addEventListener("click", () => {
+      rdStopPlay();
+      if (RD.sel === i && !$("rdWord").hidden) { rdCloseInfo(); return; }
+      rdSelect(i); rdShowSentence(i); speak(t.text);
+    });
+    const j = document.createElement("span"); j.className = "tr"; j.textContent = l[1]; j.hidden = !RD.jp;
+    para.appendChild(sen); para.appendChild(j); box.appendChild(para);
   });
   const qb = $("rdQs"); qb.textContent = "";
   let done = 0, score = 0;
@@ -2063,12 +2112,13 @@ function openPassage(p) {
     wrap.appendChild(t); wrap.appendChild(ch); qb.appendChild(wrap);
   });
 }
-$("rdAll").addEventListener("click", () => { if (RD.p) speak(RD.p.lines.map(l => l[0]).join(" ")); });
+$("rdAll").addEventListener("click", rdPlayAll);
+$("rdWordX").addEventListener("click", rdCloseInfo);
 $("rdJpBtn").addEventListener("click", () => {
   RD.jp = !RD.jp; $("rdJpBtn").textContent = RD.jp ? "訳を隠す" : "訳を見る";
-  [].slice.call($("rdLines").querySelectorAll(".j")).forEach(e => { e.hidden = !RD.jp; });
+  [].slice.call($("rdLines").querySelectorAll(".tr")).forEach(e => { e.hidden = !RD.jp; });
 });
-$("rdBack").addEventListener("click", openReadList);
+$("rdBack").addEventListener("click", () => { rdStopPlay(); openReadList(); });
 
 /* Test: multiple-choice questions over everything learned so far. */
 const STOP = ["ạ", "em", "anh", "chị", "dạ", "nghen", "hông", "nha", "ơi"];
