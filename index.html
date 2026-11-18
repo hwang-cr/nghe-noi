@@ -480,6 +480,22 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
         <button class="once" id="enSpE" style="border-style:solid">🔊 例文</button>
       </div>
       <button class="rv-show" id="enShow">答えを見る</button>
+      <details class="fold">
+        <summary>再生の設定</summary>
+        <div class="opts">
+          <div class="opt"><label>スピード</label>
+            <div class="seg" id="enRate"><button data-v="0.75">ゆっくり</button><button data-v="0.92">普通</button><button data-v="1.1">速め</button></div></div>
+          <div class="opt"><label>間(ま)</label>
+            <div class="seg" id="enGap"><button data-v="1000">短</button><button data-v="2500">中</button><button data-v="4500">長</button></div></div>
+          <div class="opt"><label>例文を2回読む</label>
+            <div class="seg" id="enRep"><button data-v="1">する</button><button data-v="0">しない</button></div></div>
+          <div class="opt"><label>文字を隠して聞く</label>
+            <div class="seg" id="enHide"><button data-v="1">隠す</button><button data-v="0">出す</button></div></div>
+          <div class="opt"><label>苦手だけ流す</label>
+            <div class="seg" id="enFav"><button data-v="1">ON</button><button data-v="0">OFF</button></div></div>
+          <p class="hint">自動再生: 単語を読む → 間 → 答えと例文を表示して読む。「隠す」は英語を見せずに聞いて考える練習(英→日・英→英)。</p>
+        </div>
+      </details>
       <div class="rv-grade" id="enGrade" hidden>
         <button class="no" id="enNo">まだ</button>
         <button class="yes" id="enYes">覚えた</button>
@@ -4552,7 +4568,7 @@ $("tkDone").addEventListener("click", () => {
 $("tkBack").addEventListener("click", openTalkList);
 
 /* Backup: move marks, review schedule and scores between apps or devices. */
-const BK_KEYS = ["nghe-noi-marks", "nghe-noi-srs", "nghe-noi-hist", "nghe-noi-read", "nghe-noi-log", "nghe-noi-talk", "nghe-noi-en-srs", "nghe-noi-en-marks", "nghe-noi-en-hist"];
+const BK_KEYS = ["nghe-noi-marks", "nghe-noi-srs", "nghe-noi-hist", "nghe-noi-read", "nghe-noi-log", "nghe-noi-talk", "nghe-noi-en-srs", "nghe-noi-en-marks", "nghe-noi-en-hist", "nghe-noi-en-play"];
 $("bkOut").addEventListener("click", async () => {
   const o = { v: 1 };
   BK_KEYS.forEach(k => { try { o[k] = localStorage.getItem(k); } catch (e) {} });
@@ -4610,6 +4626,9 @@ const EN500 = [["figure out", "句動詞", "〜を理解する・解決する・
     try { localStorage.setItem(SK, JSON.stringify(srs)); localStorage.setItem(MK, JSON.stringify([...marks])); localStorage.setItem(HK, JSON.stringify(hist.slice(-30))); } catch (e) {}
   };
   const today = () => Math.floor(Date.now() / 86400000);
+  const PK = "nghe-noi-en-play";
+  const P = { rate: 0.92, gap: 2500, rep: 1, hide: 0, fav: 0 };
+  try { Object.assign(P, JSON.parse(localStorage.getItem(PK) || "{}") || {}); } catch (e) {}
   const S = { tab: "card", mode: "en2jp", set: 0, filter: "all", order: "seq", idx: 0, shown: false, jpShown: false, list: [], playing: false, run: 0, tCount: 10, quiz: null };
 
   /* speech */
@@ -4624,7 +4643,7 @@ const EN500 = [["figure out", "句動詞", "〜を理解する・解決する・
       if (!window.speechSynthesis) return res();
       try { speechSynthesis.cancel(); } catch (e) {}
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = "en-US"; if (voice) u.voice = voice; u.rate = 0.92;
+      u.lang = "en-US"; if (voice) u.voice = voice; u.rate = P.rate;
       u.onend = u.onerror = () => res();
       speechSynthesis.speak(u);
     });
@@ -4677,6 +4696,7 @@ const EN500 = [["figure out", "句動詞", "〜を理解する・解決する・
     E$("enAns").hidden = !S.shown;
     E$("enShow").hidden = S.shown; E$("enGrade").hidden = !S.shown;
     E$("enCardBox").classList.toggle("playing", S.playing);
+    if (S.playing && P.hide && !S.shown && S.mode !== "jp2en") { pr.textContent = "🔊 聞いて考える"; pr.className = "en-big jpq small"; E$("enPosLbl").textContent = ""; }
     E$("enPlay").textContent = S.playing ? "停止" : "自動再生";
     if (S.shown) {
       const jp = E$("enJp"), df = E$("enDef");
@@ -4703,18 +4723,36 @@ const EN500 = [["figure out", "句動詞", "〜を理解する・解決する・
   async function autoPlay() {
     if (S.playing) { stopPlay(); paintCard(); return; }
     if (!cur()) return;
+    const nextIdx = () => {
+      for (let k = 1; k <= S.list.length; k++) { const i = (S.idx + k) % S.list.length; if (!P.fav || marks.has(S.list[i][0])) return i; }
+      return -1;
+    };
+    if (P.fav && !marks.has(cur()[0])) { const i = nextIdx(); if (i < 0) { E$("enMsg").textContent = "この範囲に ★苦手 がない。「苦手だけ流す」をOFFにするか、範囲を変えてみて。"; return; } S.idx = i; }
     S.playing = true; const run = ++S.run; paintCard();
     while (S.playing && run === S.run) {
       const w = cur(); if (!w) break;
       S.shown = false; S.jpShown = false; paintCard();
       await say(spokenWord(w)); if (run !== S.run) return;
-      await sleep(S.mode === "jp2en" ? 2500 : 2500); if (run !== S.run) return;
+      await sleep(P.gap); if (run !== S.run) return;
       S.shown = true; S.jpShown = true; paintCard();
       await sleep(1200); if (run !== S.run) return;
       await say(w[4]); if (run !== S.run) return;
-      await sleep(2200); if (run !== S.run) return;
-      S.idx = (S.idx + 1) % S.list.length;
+      if (P.rep) { await sleep(700); if (run !== S.run) return; await say(w[4]); if (run !== S.run) return; }
+      await sleep(Math.round(P.gap * 0.9)); if (run !== S.run) return;
+      const n = nextIdx(); if (n < 0) break; S.idx = n;
     }
+    if (run === S.run) { S.playing = false; paintCard(); }
+  }
+  function playSeg(id, key, num) {
+    const box = E$(id);
+    const paint = () => box.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(parseFloat(b.dataset.v)) === String(P[key]) ? "true" : "false"));
+    box.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      P[key] = parseFloat(b.dataset.v);
+      try { localStorage.setItem(PK, JSON.stringify(P)); } catch (er) {}
+      paint(); if (key === "hide") paintCard();
+    });
+    paint();
   }
 
   /* test */
@@ -4823,6 +4861,7 @@ const EN500 = [["figure out", "句動詞", "〜を理解する・解決する・
   segWire("enTCount", "tCount");
   E$("enSet").addEventListener("change", e => { S.set = parseInt(e.target.value, 10) || 0; S.idx = 0; S.shown = false; showTab(S.tab); });
   E$("enFilter").addEventListener("change", e => { S.filter = e.target.value; S.idx = 0; S.shown = false; showTab(S.tab); });
+  playSeg("enRate", "rate"); playSeg("enGap", "gap"); playSeg("enRep", "rep"); playSeg("enHide", "hide"); playSeg("enFav", "fav");
   E$("enShow").addEventListener("click", reveal);
   E$("enJpBtn").addEventListener("click", () => { S.jpShown = true; paintCard(); });
   E$("enPrev").addEventListener("click", () => go(-1));
