@@ -487,6 +487,8 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
             <div class="seg" id="enRate"><button data-v="0.75">ゆっくり</button><button data-v="0.92">普通</button><button data-v="1.1">速め</button></div></div>
           <div class="opt"><label>間(ま)</label>
             <div class="seg" id="enGap"><button data-v="1000">短</button><button data-v="2500">中</button><button data-v="4500">長</button></div></div>
+          <div class="opt"><label>音楽を安定(実験)</label>
+            <div class="seg" id="enHold"><button data-v="1">ON</button><button data-v="0">OFF</button></div></div>
           <div class="opt"><label>例文を2回読む</label>
             <div class="seg" id="enRep"><button data-v="1">する</button><button data-v="0">しない</button></div></div>
           <div class="opt"><label>文字を隠して聞く</label>
@@ -4849,7 +4851,7 @@ const EN500 = [["figure out", "句動詞", "〜を理解する・解決する・
   };
   const today = () => Math.floor(Date.now() / 86400000);
   const PK = "nghe-noi-en-play";
-  const P = { rate: 0.92, gap: 2500, rep: 1, hide: 0, fav: 0 };
+  const P = { rate: 0.92, gap: 2500, rep: 1, hide: 0, fav: 0, hold: 0 };
   try { Object.assign(P, JSON.parse(localStorage.getItem(PK) || "{}") || {}); } catch (e) {}
   const S = { tab: "card", mode: "en2jp", set: 0, filter: "all", order: "seq", idx: 0, shown: false, jpShown: false, list: [], playing: false, run: 0, tCount: 10, quiz: null };
 
@@ -4871,6 +4873,19 @@ const EN500 = [["figure out", "句動詞", "〜を理解する・解決する・
     });
   }
   const sleep = ms => new Promise(r => setTimeout(r, ms));
+  /* Experimental: during pauses keep a silent utterance going so iOS keeps the music ducked at a steady level. */
+  async function hold(ms) {
+    const end = Date.now() + ms;
+    while (Date.now() < end) {
+      await new Promise(res => {
+        let done = false; const fin = () => { if (!done) { done = true; res(); } };
+        try { const u = new SpeechSynthesisUtterance("  "); u.lang = "en-US"; u.volume = 0; u.rate = 0.5; u.onend = u.onerror = fin; speechSynthesis.speak(u); } catch (e) { fin(); }
+        setTimeout(fin, Math.max(60, Math.min(600, end - Date.now())));
+      });
+      await sleep(80);
+    }
+  }
+  const wait = ms => P.hold ? hold(ms) : sleep(ms);
   const spokenWord = w => w[0].replace(/\s*\(.*?\)\s*/g, "").replace(/\//g, " ");
 
   /* pool */
@@ -4955,12 +4970,12 @@ const EN500 = [["figure out", "句動詞", "〜を理解する・解決する・
       const w = cur(); if (!w) break;
       S.shown = false; S.jpShown = false; paintCard();
       await say(spokenWord(w)); if (run !== S.run) return;
-      await sleep(P.gap); if (run !== S.run) return;
+      await wait(P.gap); if (run !== S.run) return;
       S.shown = true; S.jpShown = true; paintCard();
-      await sleep(1200); if (run !== S.run) return;
+      await wait(1200); if (run !== S.run) return;
       await say(w[4]); if (run !== S.run) return;
-      if (P.rep) { await sleep(700); if (run !== S.run) return; await say(w[4]); if (run !== S.run) return; }
-      await sleep(Math.round(P.gap * 0.9)); if (run !== S.run) return;
+      if (P.rep) { await wait(700); if (run !== S.run) return; await say(w[4]); if (run !== S.run) return; }
+      await wait(Math.round(P.gap * 0.9)); if (run !== S.run) return;
       const n = nextIdx(); if (n < 0) break; S.idx = n;
     }
     if (run === S.run) { S.playing = false; paintCard(); }
@@ -5083,7 +5098,7 @@ const EN500 = [["figure out", "句動詞", "〜を理解する・解決する・
   segWire("enTCount", "tCount");
   E$("enSet").addEventListener("change", e => { S.set = parseInt(e.target.value, 10) || 0; S.idx = 0; S.shown = false; showTab(S.tab); });
   E$("enFilter").addEventListener("change", e => { S.filter = e.target.value; S.idx = 0; S.shown = false; showTab(S.tab); });
-  playSeg("enRate", "rate"); playSeg("enGap", "gap"); playSeg("enRep", "rep"); playSeg("enHide", "hide"); playSeg("enFav", "fav");
+  playSeg("enRate", "rate"); playSeg("enGap", "gap"); playSeg("enHold", "hold"); playSeg("enRep", "rep"); playSeg("enHide", "hide"); playSeg("enFav", "fav");
   E$("enShow").addEventListener("click", reveal);
   E$("enJpBtn").addEventListener("click", () => { S.jpShown = true; paintCard(); });
   E$("enPrev").addEventListener("click", () => go(-1));
